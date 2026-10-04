@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>부품 입출고관리 | 삼광케미칼</title>
+    <link rel="stylesheet" href="/src/styles/base.css" />
+    <link rel="stylesheet" href="/src/styles/components.css" />
+    <link rel="stylesheet" href="/src/styles/print.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">▦</span>
+        <span class="brand-text">부품 입출고관리</span>
+      </div>
+      <nav class="app-nav" aria-label="주 메뉴">
+        <a href="#/" data-route="/">대시보드</a>
+        <a href="#/inbound" data-route="/inbound">입고</a>
+        <a href="#/outbound" data-route="/outbound">출고</a>
+        <a href="#/stock" data-route="/stock">재고 현황</a>
+        <a href="#/history" data-route="/history">이력</a>
+        <a href="#/parts" data-route="/parts">부품 관리</a>
+        <a href="#/settings" data-route="/settings">설정</a>
+      </nav>
+      <a class="sync-badge" id="sync-badge" href="#/settings" hidden></a>
+    </header>
+    <main id="app" tabindex="-1"></main>
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+    <div id="modal" class="modal" hidden></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+@page {
+  size: A4;
+  margin: 10mm 7mm;
+}
+
+@media print {
+  html {
+    font-size: 12px;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .app-header,
+  .toasts,
+  .modal,
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    max-width: none;
+    padding: 0;
+  }
+
+  .label-sheet {
+    grid-template-columns: repeat(3, 1fr) !important;
+    border: 0;
+  }
+
+  .print-label {
+    break-inside: avoid;
+    border-color: #ddd;
+  }
+}
