@@ -842,3 +842,13 @@ tr.is-cancelled td.qty {
     right: 1rem;
   }
 }
+
+/* 휴대폰: [입력] 단추를 화면 아래에 붙여서 스크롤하지 않고 누를 수 있게 한다 */
+@media (max-width: 720px) {
+  .btn-submit {
+    position: sticky;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+    z-index: 5;
+    box-shadow: 0 6px 18px rgb(20 32 46 / 25%);
+  }
+}

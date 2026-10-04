@@ -161,3 +161,41 @@ describe('행 변환', () => {
     expect(gs.rowToTx(row).memo).toBe('=HYPERLINK("x")')
   })
 })
+
+describe('리뷰 반영: 서버 판단 로직', () => {
+  it('전체 바꾸기는 마지막으로 본 리비전이 서버와 같을 때만 허용한다', () => {
+    expect(gs.checkReplaceAllowed({ expectedRevision: 3 }, 3).ok).toBe(true)
+    expect(gs.checkReplaceAllowed({ expectedRevision: 2 }, 3)).toMatchObject({ ok: false, code: 'CONFLICT' })
+  })
+
+  it('사용자가 덮어쓰기를 직접 고르면(force) 리비전이 달라도 허용한다', () => {
+    expect(gs.checkReplaceAllowed({ expectedRevision: 2, force: true }, 3).ok).toBe(true)
+  })
+
+  it('리비전 없이 보내면 force일 때만 허용한다 (처음 연결하며 이 기기로 덮어쓰기)', () => {
+    expect(gs.checkReplaceAllowed({ expectedRevision: null, force: true }, 7).ok).toBe(true)
+    expect(gs.checkReplaceAllowed({ expectedRevision: null }, 7).ok).toBe(false)
+    expect(gs.checkReplaceAllowed({}, 0).ok).toBe(false)
+  })
+
+  it('받기 위치 직전 행의 ID가 클라이언트가 아는 것과 다르면 전체를 다시 보낸다', () => {
+    expect(gs.needsFullPull({ dataVersion: 'v1', txOffset: 0 }, 'v1', null)).toBe(false)
+    expect(gs.needsFullPull({ dataVersion: 'v1', txOffset: 2, lastRowId: 't2' }, 'v1', 't2')).toBe(false)
+    expect(gs.needsFullPull({ dataVersion: 'v1', txOffset: 2, lastRowId: 't2' }, 'v1', 'tX')).toBe(true)
+    expect(gs.needsFullPull({ dataVersion: 'v0', txOffset: 2, lastRowId: 't2' }, 'v1', 't2')).toBe(true)
+    expect(gs.needsFullPull({ dataVersion: 'v1', txOffset: 5, lastRowId: 't5' }, 'v1', null)).toBe(true)
+  })
+
+  it('시트에서 읽은 행 중 형식이 잘못된 것은 걸러서 따로 센다', () => {
+    const good = tx('t1')
+    const bad = { ...tx('t2'), qty: NaN }
+    const result = gs.filterValidRows([good, bad])
+    expect(result.transactions.map((t) => t.id)).toEqual(['t1'])
+    expect(result.invalidCount).toBe(1)
+  })
+
+  it('탭·줄바꿈으로 시작하는 값도 수식 방지 처리한다', () => {
+    const row = gs.txToRow(tx('t1', { memo: '\t=1+1' }), NOW)
+    expect(row[gs.TX_COLUMNS.indexOf('memo')].charAt(0)).toBe("'")
+  })
+})

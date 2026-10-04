@@ -48,8 +48,14 @@ export const createStore = ({ storage, now = () => new Date().toISOString(), mak
     return saved ? result : { ...result, warning: SAVE_WARNING }
   }
 
-  // 구글 시트에서 받은 데이터를 반영한다 (보낼 목록에 다시 넣지 않음)
-  const applyRemote = (nextState) => commit(nextState, { ok: true })
+  // 구글 시트에서 받은 데이터를 반영한다 (보낼 목록에 다시 넣지 않음).
+  // 다른 탭이 방금 저장한 내용을 덮어쓰지 않도록 최신 상태를 읽은 뒤 mergeFn으로 합친다.
+  const applyRemote = (mergeFn) => {
+    syncFromStorage()
+    const next = mergeFn(state)
+    if (next === state) return { ok: true, changed: false }
+    return commit(next, { ok: true, changed: true })
+  }
 
   const subscribe = (listener) => {
     listeners.add(listener)

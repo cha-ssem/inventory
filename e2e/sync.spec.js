@@ -124,3 +124,33 @@ test.describe('구글 시트 연동', () => {
     await expect(page.getByTestId('data-summary')).toContainText('부품 1개')
   })
 })
+
+test('다른 기기가 올린 사이에 초기화하면 충돌을 알리고, 시트 데이터 받기로 해결한다', async ({ browser }) => {
+  const server = createFakeAppsScript()
+  const deviceA = await browser.newContext()
+  const deviceB = await browser.newContext()
+  await server.attach(deviceA)
+  await server.attach(deviceB)
+  const a = await deviceA.newPage()
+  const b = await deviceB.newPage()
+
+  await loadSample(a)
+  await connect(a)
+  await connect(b)
+  await b.goto('/#/inbound')
+  await scanAndSubmit(b, 'SK-RM-001', { qty: 9 })
+  await syncNow(b)
+
+  await a.goto('/#/settings')
+  await a.getByRole('button', { name: '전체 초기화' }).click()
+  await a.getByRole('dialog').getByRole('button', { name: '모두 지우기' }).click()
+  await expect(a.getByTestId('sync-conflict')).toBeVisible()
+  expect(server.db.parts).toHaveLength(25)
+
+  await a.getByRole('button', { name: /시트 데이터 받기/ }).click()
+  await expect(a.getByTestId('sync-conflict')).toHaveCount(0)
+  await expect(a.getByTestId('data-summary')).toContainText('부품 25개')
+
+  await deviceA.close()
+  await deviceB.close()
+})

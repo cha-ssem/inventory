@@ -8,7 +8,8 @@ var PART_COLUMNS = ['partNo', 'name', 'spec', 'unit', 'safetyStock', 'location',
 var TX_TYPES = { IN: true, OUT: true, CANCEL: true }
 var LIMITS = { maxQty: 1000000, maxText: 100, maxMemo: 200, maxPartNo: 30, maxBatch: 500 }
 var PART_NO_PATTERN = /^[A-Z0-9][A-Z0-9-]*$/
-var FORMULA_PREFIX = /^[=+\-@]/
+// 탭·줄바꿈으로 시작해도 수식으로 해석될 수 있어 함께 막는다 (OWASP CSV 인젝션 권고)
+var FORMULA_PREFIX = /^[=+\-@\t\r]/
 
 function parseRequest(body) {
   var data
@@ -217,3 +218,38 @@ function rowToPart(row) {
     updatedAt: fromTextCell(get('updatedAt')),
   }
 }
+
+// 전체 바꾸기는 마지막으로 본 리비전이 서버와 같을 때만 허용한다 (그사이 다른 기기가 쓴 기록을 덮어쓰지 않도록).
+// 사용자가 "이 기기 데이터로 덮어쓰기"를 직접 고른 경우(처음 연결, 충돌 후 덮어쓰기)에만 force로 허용한다.
+function checkReplaceAllowed(req, currentRevision) {
+  if (req.force === true) return { ok: true }
+  var expected = req.expectedRevision
+  if (expected === null || expected === undefined) {
+    return { ok: false, code: 'CONFLICT', error: '시트 상태를 확인하지 않고 바꾸려 했습니다. 먼저 동기화하세요.' }
+  }
+  if (Number(expected) !== Number(currentRevision)) {
+    return { ok: false, code: 'CONFLICT', error: '다른 기기가 그사이 시트를 바꿨습니다.' }
+  }
+  return { ok: true }
+}
+
+// 데이터 버전이 다르거나, 받기 위치 직전 행의 ID가 클라이언트가 아는 것과 다르면(행 삭제·정렬) 전체를 다시 보낸다
+function needsFullPull(req, currentVersion, idBeforeOffset) {
+  if (req.dataVersion !== currentVersion) return true
+  var offset = Number(req.txOffset) || 0
+  if (offset === 0) return false
+  return !req.lastRowId || idBeforeOffset !== req.lastRowId
+}
+
+// 사람이 시트를 직접 고쳐 형식이 깨진 행은 보내지 않고 개수만 알린다
+function filterValidRows(transactions) {
+  var valid = []
+  var invalidCount = 0
+  transactions.forEach(function (tx) {
+    var result = validateIncomingTransaction(tx)
+    if (result.ok) valid.push(result.value)
+    else invalidCount += 1
+  })
+  return { transactions: valid, invalidCount: invalidCount }
+}
+

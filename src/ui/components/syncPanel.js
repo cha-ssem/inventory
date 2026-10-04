@@ -42,6 +42,16 @@ const connectedView = (status, config) => html`
     <div><dt>마지막 동기화</dt><dd>${status.lastSyncAt ? formatDateTime(status.lastSyncAt) : '-'}</dd></div>
     <div><dt>연결 주소</dt><dd class="mono">${maskUrl(config?.url || '')}</dd></div>
   </dl>
+  ${status.conflict
+    ? html`<div class="result-card is-error" data-testid="sync-conflict">
+        <div class="result-title">시트 전체 바꾸기를 멈췄습니다</div>
+        <p>이 기기에서 샘플 불러오기·초기화·복원을 하는 사이에 다른 기기가 시트에 기록을 올렸습니다. 어떻게 할지 고르세요.</p>
+        <div class="form-actions" style="justify-content:flex-start">
+          <button type="button" class="btn btn-primary" data-sync="conflict-download">시트 데이터 받기 (내 바꾸기 취소)</button>
+          <button type="button" class="btn btn-danger" data-sync="conflict-overwrite">그래도 이 기기 데이터로 덮어쓰기</button>
+        </div>
+      </div>`
+    : ''}
   ${status.rejected.length > 0
     ? html`<p class="error">시트가 거부한 항목 ${status.rejected.length}건:</p>
         <ul class="error-list">${status.rejected.map((r) => html`<li>${r.id || r.partNo}: ${r.reason}</li>`)}</ul>`
@@ -149,12 +159,24 @@ export const mountSyncPanel = (el, { store, sync }) => {
     }
   }
 
+  const overwrite = async () => {
+    const ok = await confirmDialog({
+      title: '이 기기 데이터로 덮어쓰기',
+      message: '다른 기기가 올린 기록까지 포함해 시트의 데이터가 모두 이 기기 데이터로 바뀝니다.\n모든 기기에 반영되며 되돌릴 수 없습니다.',
+      confirmLabel: '덮어쓰기',
+      danger: true,
+    })
+    if (ok) withBusy(() => sync.resolveConflict('overwrite'))
+  }
+
   el.addEventListener('click', (event) => {
     const action = event.target.closest('[data-sync]')?.dataset.sync
     const form = el.querySelector('.sync-form')
     if (action === 'test') withBusy(() => testConnection(form))
     if (action === 'now') withBusy(() => sync.syncNow())
     if (action === 'disconnect') disconnect()
+    if (action === 'conflict-download') withBusy(() => sync.resolveConflict('download'))
+    if (action === 'conflict-overwrite') overwrite()
   })
   el.addEventListener('submit', (event) => {
     event.preventDefault()

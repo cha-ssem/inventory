@@ -12,7 +12,7 @@ const isOptionalString = (v) => v === undefined || v === null || typeof v === 's
 const isDateString = (v) => typeof v === 'string' && !Number.isNaN(Date.parse(v))
 const hasUnique = (list, key) => new Set(list.map((item) => item[key])).size === list.length
 
-const isValidPart = (p) =>
+export const isValidPart = (p) =>
   Boolean(p) &&
   typeof p.partNo === 'string' &&
   PART_NO_PATTERN.test(p.partNo) &&
@@ -24,7 +24,7 @@ const isValidPart = (p) =>
   isOptionalString(p.spec) &&
   isOptionalString(p.location)
 
-const isValidTransaction = (t) =>
+export const isValidTransaction = (t) =>
   Boolean(t) &&
   isNonEmptyString(t.id) &&
   Boolean(TX_TYPES[t.type]) &&
