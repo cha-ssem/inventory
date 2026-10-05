@@ -11,7 +11,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "statements": "node scripts/statements/generate.mjs",
-    "prompt-sheet": "node scripts/prompt-sheet/generate.mjs"
+    "prompt-sheet": "node scripts/prompt-sheet/generate.mjs",
+    "instructor-guide": "node scripts/instructor-guide/generate.mjs"
   },
   "author": "",
   "license": "ISC",
