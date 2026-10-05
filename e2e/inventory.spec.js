@@ -225,3 +225,27 @@ test.describe('부품 관리 품번 제안', () => {
     await expect(page.getByTestId('parts-table')).toContainText('SK-PD-006')
   })
 })
+
+test.describe('대시보드 출고 TOP 5', () => {
+  test('이번 달 출고가 많은 순으로 보이고, 누르면 그 부품의 이번 달 출고 이력으로 간다', async ({ page }) => {
+    await registerPart(page, { partNo: 'SK-TOP-01', name: '많이 나간 부품' })
+    await registerPart(page, { partNo: 'SK-TOP-02', name: '적게 나간 부품' })
+    await page.goto('/#/inbound')
+    await scanAndSubmit(page, 'SK-TOP-01', { qty: 100 })
+    await scanAndSubmit(page, 'SK-TOP-02', { qty: 100 })
+    await page.goto('/#/outbound')
+    await scanAndSubmit(page, 'SK-TOP-02', { qty: 3 })
+    await scanAndSubmit(page, 'SK-TOP-01', { qty: 30 })
+
+    await page.goto('/#/')
+    const items = page.getByTestId('top-shipped').getByRole('listitem')
+    await expect(items).toHaveCount(2)
+    await expect(items.first()).toContainText('SK-TOP-01')
+    await expect(items.first()).toContainText('30')
+
+    await items.first().getByRole('link').click()
+    await expect(page.getByLabel('품번·품명')).toHaveValue('SK-TOP-01')
+    await expect(page.getByLabel('구분')).toHaveValue('OUT')
+    await expect(page.locator('tbody tr')).toHaveCount(1)
+  })
+})

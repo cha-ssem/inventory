@@ -1,6 +1,6 @@
 import { addDays, toDateKey } from '../../domain/dates.js'
 import { buildHistoryRows } from '../../domain/history.js'
-import { dashboardStats, recentTransactions } from '../../domain/stats.js'
+import { dashboardStats, recentTransactions, topShippedThisMonth } from '../../domain/stats.js'
 import { buildStockRows } from '../../domain/stock.js'
 import { formatNumber, html, setHtml } from '../dom.js'
 import { txTable } from '../components/txTable.js'
@@ -68,6 +68,24 @@ const barChart = (series) => {
     <div class="legend"><span><i style="background:var(--in)"></i>입고</span><span><i style="background:var(--out)"></i>출고</span></div>`
 }
 
+// 이번 달 출고 많은 부품. 줄을 누르면 그 부품의 이번 달 출고 이력으로 간다.
+const topShippedList = (top) => {
+  if (top.length === 0) return html`<div class="empty">이번 달 출고 기록이 없습니다.</div>`
+  const max = top[0].qty
+  return html`<ol class="top-list" data-testid="top-shipped">
+    ${top.map(
+      (t, i) => html`<li>
+        <a href="#/history?type=OUT&month=1&q=${encodeURIComponent(t.partNo)}">
+          <span class="rank">${i + 1}</span>
+          <span class="top-name"><strong class="mono">${t.partNo}</strong> ${t.name}</span>
+          <span class="top-bar" aria-hidden="true"><i style="width:${Math.round((t.qty / max) * 100)}%"></i></span>
+          <span class="num">${formatNumber(t.qty)}</span>
+        </a>
+      </li>`,
+    )}
+  </ol>`
+}
+
 const emptyState = () => html`<div class="panel empty">
   <h2>등록된 부품이 없습니다</h2>
   <p>부품을 등록하거나, 시연용 샘플 데이터를 불러오세요.</p>
@@ -105,6 +123,10 @@ export const renderDashboard = (container, { store }) => {
                   ${barChart(dailyCounts(transactions, parts, toDateKey(now)))}
                 </section>
               </div>
+              <section class="panel">
+                <div class="panel-head"><h2>이번 달 출고 많은 부품 TOP 5</h2><a href="#/history?type=OUT&month=1">이번 달 출고 이력</a></div>
+                ${topShippedList(topShippedThisMonth({ parts, transactions, now }))}
+              </section>
               <section class="panel">
                 <div class="panel-head"><h2>최근 입출고</h2><a href="#/history">전체 이력</a></div>
                 ${txTable(recentTransactions(transactions, parts, 10))}

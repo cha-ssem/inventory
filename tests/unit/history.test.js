@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildHistoryRows, filterHistory } from '../../src/domain/history.js'
-import { dashboardStats, recentTransactions } from '../../src/domain/stats.js'
+import { dashboardStats, recentTransactions, topShippedThisMonth } from '../../src/domain/stats.js'
 
 const parts = [
   { partNo: 'SK-AD-001', name: '에어벤트 덕트', safetyStock: 10, active: true },
@@ -65,5 +65,38 @@ describe('dashboardStats', () => {
 describe('recentTransactions', () => {
   it('최신 기록부터 지정한 개수만큼 돌려준다', () => {
     expect(recentTransactions(txs, parts, 2).map((r) => r.id)).toEqual(['5', '4'])
+  })
+})
+
+describe('topShippedThisMonth', () => {
+  const out = (id, partNo, qty, createdAt, extra = {}) => ({ id, type: 'OUT', partNo, qty, createdAt, ...extra })
+  const NOW = '2026-10-20T03:00:00.000Z'
+  const many = [
+    out('a', 'SK-AD-001', 30, '2026-10-01T00:00:00.000Z'),
+    out('b', 'SK-AD-001', 20, '2026-10-15T00:00:00.000Z'),
+    out('c', 'SK-PD-001', 40, '2026-10-02T00:00:00.000Z'),
+    out('d', 'SK-PD-001', 99, '2026-09-30T16:00:00.000Z'), // 한국 시간 10/01 01:00 → 이번 달
+    out('e', 'SK-PD-001', 500, '2026-09-30T00:00:00.000Z'), // 9월
+    { id: 'f', type: 'IN', partNo: 'SK-OLD-01', qty: 900, createdAt: '2026-10-03T00:00:00.000Z' },
+    out('g', 'SK-OLD-01', 70, '2026-10-03T00:00:00.000Z'),
+    { id: 'h', type: 'CANCEL', partNo: 'SK-OLD-01', qty: 70, refId: 'g', createdAt: '2026-10-03T01:00:00.000Z' },
+    out('i', 'SK-NEW-01', 5, '2026-10-04T00:00:00.000Z'),
+  ]
+
+  it('이번 달(한국 시간) 출고 수량을 품번별로 더해 많은 순으로 준다. 입고·취소된 출고·지난달은 뺀다', () => {
+    expect(topShippedThisMonth({ parts, transactions: many, now: NOW })).toEqual([
+      { partNo: 'SK-PD-001', name: '페달 하우징', qty: 139 },
+      { partNo: 'SK-AD-001', name: '에어벤트 덕트', qty: 50 },
+      { partNo: 'SK-NEW-01', name: '', qty: 5 },
+    ])
+  })
+
+  it('개수를 제한하고, 수량이 같으면 품번 순으로 둔다', () => {
+    const tie = [out('1', 'SK-B', 10, '2026-10-05T00:00:00.000Z'), out('2', 'SK-A', 10, '2026-10-05T00:00:00.000Z'), out('3', 'SK-C', 1, '2026-10-05T00:00:00.000Z')]
+    expect(topShippedThisMonth({ parts, transactions: tie, now: NOW, limit: 2 }).map((r) => r.partNo)).toEqual(['SK-A', 'SK-B'])
+  })
+
+  it('이번 달 출고가 없으면 빈 목록', () => {
+    expect(topShippedThisMonth({ parts, transactions: txs, now: '2026-11-05T03:00:00.000Z' })).toEqual([])
   })
 })

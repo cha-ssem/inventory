@@ -1,0 +1,71 @@
+/* 대시보드: 이번 달 출고 많은 부품 TOP 5 */
+.top-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.top-list a {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1.4fr) minmax(4rem, 1fr) 4.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+  text-decoration: none;
+}
+
+.top-list li:last-child a {
+  border-bottom: 0;
+}
+
+.top-list a:hover {
+  background: var(--surface-2);
+}
+
+.top-list .rank {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--out-soft);
+  color: var(--out);
+  font-weight: 800;
+}
+
+.top-list .top-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-list .top-bar {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.top-list .top-bar i {
+  display: block;
+  height: 100%;
+  background: var(--out);
+}
+
+.top-list .num {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+  .top-list a {
+    grid-template-columns: 1.75rem minmax(0, 1fr) 4rem;
+  }
+
+  .top-list .top-bar {
+    display: none;
+  }
+}

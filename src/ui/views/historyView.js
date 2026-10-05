@@ -20,13 +20,16 @@ const exportCsv = (rows) => {
   toast(`${rows.length}건을 CSV로 내보냈습니다.`, 'success')
 }
 
+// 주소로 조건을 받는다: today=1(오늘), month=1(이번 달 1일부터), type, q(품번·품명)
+const initialFrom = (query, today) => {
+  if (query.get('today') === '1') return today
+  if (query.get('month') === '1') return `${today.slice(0, 7)}-01`
+  return addDays(today, -(DEFAULT_DAYS - 1))
+}
+
 const initialFilters = (query) => {
   const today = toDateKey(new Date())
-  return {
-    from: query.get('today') === '1' ? today : addDays(today, -(DEFAULT_DAYS - 1)),
-    to: today,
-    type: query.get('type') || '',
-  }
+  return { from: initialFrom(query, today), to: today, type: query.get('type') || '', query: query.get('q') || '' }
 }
 
 const typeOption = (value, label, selected) =>
@@ -50,7 +53,7 @@ export const renderHistory = (container, { store, query }) => {
               ${typeOption('', '전체', init.type)}${typeOption('IN', '입고', init.type)}${typeOption('OUT', '출고', init.type)}${typeOption('CANCEL', '취소', init.type)}
             </select>
           </div>
-          <div class="field grow"><label for="h-q">품번·품명</label><input id="h-q" class="input" name="query" placeholder="검색" /></div>
+          <div class="field grow"><label for="h-q">품번·품명</label><input id="h-q" class="input" name="query" placeholder="검색" value="${init.query}" /></div>
           <button type="button" class="btn" data-action="all">전체 기간</button>
         </form>
         <p class="muted summary"></p>
