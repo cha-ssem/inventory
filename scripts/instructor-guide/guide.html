@@ -3,70 +3,101 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>강사용 진행 자료</title>
+<title>강사용 교재</title>
 <!--
-  강사용 진행 자료 (요점형, A4 인쇄용). 내용을 고친 뒤 inventory-app에서 npm run instructor-guide
-  바탕 문서: materials/lecture-runbook.md, materials/practice-guide.md
+  강사용 교재 (강의 내용 전체, A4 인쇄용). 내용을 고친 뒤 inventory-app에서 npm run instructor-guide
+  바탕 문서: materials/lecture-runbook.md, materials/practice-guide.md, inventory-prd.md, work-log.md
 -->
 <style>
-  @page { size: A4; margin: 13mm 13mm 15mm; }
+  @page { size: A4; margin: 13mm 14mm 15mm; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; color: #111; font-size: 9.2pt; line-height: 1.45; }
-  h1 { font-size: 20pt; margin: 0 0 1mm; letter-spacing: -0.3pt; }
-  h2 { font-size: 13pt; margin: 0 0 2mm; padding: 1.2mm 2.5mm; background: #e6e6e6; border-left: 2.5mm solid #111; }
-  h3 { font-size: 10pt; margin: 3mm 0 1.2mm; }
+  body { margin: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; color: #111; font-size: 9.4pt; line-height: 1.5; }
+  h1 { font-size: 22pt; margin: 0 0 1mm; letter-spacing: -0.3pt; }
+  h2 { font-size: 14pt; margin: 0 0 2.5mm; padding: 1.4mm 2.5mm; background: #e6e6e6; border-left: 2.5mm solid #111; }
+  h3 { font-size: 11pt; margin: 4mm 0 1.4mm; padding-bottom: 0.6mm; border-bottom: 1px solid #999; break-after: avoid; }
+  h4 { font-size: 9.8pt; margin: 2.6mm 0 0.8mm; break-after: avoid; }
   p { margin: 1mm 0; }
-  ul { margin: 0.5mm 0 1mm; padding-left: 4.5mm; }
-  li { margin: 0.4mm 0; }
+  ul, ol { margin: 0.6mm 0 1.4mm; padding-left: 5mm; }
+  li { margin: 0.5mm 0; }
   .page { break-before: page; }
   .sub { color: #444; }
-  .meta { display: flex; gap: 6mm; color: #444; margin-bottom: 3mm; }
-  table { width: 100%; border-collapse: collapse; margin: 1mm 0 2mm; break-inside: auto; }
-  th, td { border: 1px solid #999; padding: 1mm 1.6mm; vertical-align: top; text-align: left; }
+  .meta { display: flex; gap: 6mm; color: #444; margin: 1mm 0 4mm; flex-wrap: wrap; }
+  table { width: 100%; border-collapse: collapse; margin: 1.2mm 0 2.4mm; }
+  th, td { border: 1px solid #999; padding: 1.1mm 1.7mm; vertical-align: top; text-align: left; }
   th { background: #eee; font-weight: 700; }
   tr { break-inside: avoid; }
   td.min { white-space: nowrap; width: 1%; }
-  /* 세션 진행표: 마지막 '방식' 칸은 한 줄로 */
   table.sched td:last-child, table.sched th:last-child { white-space: nowrap; width: 1%; }
   .num { text-align: right; }
-  .box { border: 1.2px solid #111; border-radius: 1.6mm; padding: 2mm 3mm; margin: 2mm 0; break-inside: avoid; }
-  .box h3 { margin-top: 0; }
+  .box { border: 1.2px solid #111; border-radius: 1.6mm; padding: 2mm 3mm; margin: 2.4mm 0; break-inside: avoid; }
+  .box h4 { margin-top: 0; }
+  .note { border-left: 1.4mm solid #777; background: #f6f6f6; padding: 1.4mm 2.6mm; margin: 2mm 0; break-inside: avoid; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
-  .session-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .session-head { display: flex; justify-content: space-between; align-items: baseline; gap: 4mm; }
   .time { font-weight: 700; white-space: nowrap; }
-  .goal { margin: 0 0 1.5mm; }
-  .goal b { display: inline-block; min-width: 9mm; }
-  .tag { display: inline-block; border: 1px solid #111; border-radius: 1mm; padding: 0 1.4mm; font-size: 8pt; font-weight: 700; }
-  .must { background: #111; color: #fff; border-color: #111; }
-  pre { margin: 1mm 0 2mm; padding: 1.6mm 2.4mm; background: #f4f4f4; border: 1px solid #bbb; border-radius: 1.2mm; white-space: pre-wrap; font-family: inherit; font-size: 8.6pt; break-inside: avoid; }
-  code { font-family: ui-monospace, 'SF Mono', Consolas, 'Apple SD Gothic Neo', 'Malgun Gothic', monospace; font-size: 8.4pt; background: #f0f0f0; padding: 0 0.8mm; border-radius: 0.6mm; }
-  .check li { list-style: none; margin-left: -4.5mm; }
+  .goal { margin: 0 0 2mm; }
+  .tag { display: inline-block; border: 1px solid #111; border-radius: 1mm; padding: 0 1.4mm; font-size: 8pt; font-weight: 700; background: #111; color: #fff; }
+  pre { margin: 1mm 0 2.4mm; padding: 1.8mm 2.6mm; background: #f4f4f4; border: 1px solid #bbb; border-radius: 1.2mm; white-space: pre-wrap; font-family: inherit; font-size: 8.8pt; break-inside: avoid; }
+  code { font-family: ui-monospace, 'SF Mono', Consolas, 'Apple SD Gothic Neo', 'Malgun Gothic', monospace; font-size: 8.6pt; background: #f0f0f0; padding: 0 0.8mm; border-radius: 0.6mm; }
+  .check li { list-style: none; margin-left: -5mm; }
   .check li::before { content: '☐ '; }
-  .say { border-left: 1.2mm solid #777; padding: 0.6mm 2mm; margin: 1.5mm 0; background: #fafafa; }
-  .small { font-size: 8.2pt; color: #444; }
-  .section-gap { margin-top: 4mm; }
+  .qa dt { font-weight: 700; margin-top: 1.6mm; }
+  .qa dt::before { content: 'Q. '; }
+  .qa dd { margin: 0.4mm 0 0 5mm; }
+  .qa dd::before { content: 'A. '; font-weight: 700; }
+  .small { font-size: 8.4pt; color: #444; }
+  .toc { columns: 2; column-gap: 8mm; }
+  .toc li { break-inside: avoid; }
 </style>
 </head>
 <body>
 
-<!-- 1쪽: 한눈에 보기 -->
+<!-- ===================== 표지·목차 ===================== -->
 <section>
-  <h1>강사용 진행 자료</h1>
+  <h1>강사용 교재</h1>
   <div class="sub">중소기업 실무자를 위한 AI 활용과 업무자동화 · (주)삼광케미칼 사무직</div>
-  <div class="meta"><span><b>강의일</b> 2026-10-07(수)</span><span><b>시간</b> 120분 (90분안 포함)</span><span><b>대상</b> 구매·자재·품질·영업·관리</span></div>
+  <div class="meta"><span><b>강의일</b> 2026-10-07(수)</span><span><b>시간</b> 120분 (90분안 포함)</span><span><b>대상</b> 구매·자재·품질·영업·관리</span><span><b>방식</b> 강사 시연 + 핵심 실습</span></div>
 
   <div class="box">
-    <h3>강의 목표</h3>
-    <p>강의가 끝나면 참석자가 <b>다음 날 자기 업무에 Claude를 하나 이상</b> 쓸 수 있다.</p>
-    <h3>계속 반복할 메시지 3가지</h3>
-    <ul>
-      <li><b>역할 + 상황 + 요청 + 출력 형식</b>으로 쓰면 결과가 좋아진다.</li>
-      <li><b>AI 결과는 초안이다.</b> 숫자·품번은 원본과 대조한다.</li>
-      <li><b>가상 자료로 연습하고</b>, 실제 자료는 회사 규칙 안에서 쓴다.</li>
-    </ul>
+    <h4>이 교재의 쓰임</h4>
+    <p>강의에서 다루는 내용 전체를 강사가 미리 이해하고, 강의 중에는 해당 세션을 펼쳐 진행할 수 있게 정리했다. 세션마다 <b>목표 → 진행표 → 강의 내용(개념과 배경) → 실습·시연 절차와 정답 → 자주 나오는 질문 → 주의할 점</b> 순서다. 말할 문장(대본)은 넣지 않았다.</p>
+    <p class="small">정답이 들어 있으므로 참석자에게 배포하지 않는다. 참석자용은 프롬프트 모음집 1장과 실습 파일이다.</p>
   </div>
 
-  <h3>시간표</h3>
+  <h3>강의 목표와 반복할 메시지</h3>
+  <p>강의가 끝나면 참석자가 <b>다음 날 자기 업무에 Claude를 하나 이상</b> 쓸 수 있다.</p>
+  <ol>
+    <li><b>역할 + 상황 + 요청 + 출력 형식</b>으로 쓰면 결과가 좋아진다.</li>
+    <li><b>AI 결과는 초안이다.</b> 숫자·품번은 원본과 대조한다.</li>
+    <li><b>가상 자료로 연습하고</b>, 실제 자료는 회사 규칙 안에서 쓴다.</li>
+  </ol>
+
+  <h3>목차</h3>
+  <ol class="toc">
+    <li>강의 전체 구성과 준비</li>
+    <li>세션 0. 오프닝: 완성품부터</li>
+    <li>세션 1. Claude 기초</li>
+    <li>세션 2. 엑셀 × Claude</li>
+    <li>세션 3. 서류 사진 → 표</li>
+    <li>세션 4. 바코드 라벨 만들기</li>
+    <li>세션 5. Claude Code 시연: 입출고관리</li>
+    <li>세션 6. 마무리: 도입 로드맵과 지원사업</li>
+    <li>부록 A. 실습 프롬프트 원문</li>
+    <li>부록 B. 정답과 체크포인트 모음</li>
+    <li>부록 C. 장애 대응</li>
+    <li>부록 D. 용어 풀이</li>
+  </ol>
+
+  <h3>강의 대상 회사</h3>
+  <p>(주)삼광케미칼: 울산 북구, 자동차 부품 제조(공조 덕트, 페달, 케이스류), 중소기업. 실습 자료의 품번·품명은 이 업종에 맞춘 <b>가상 자료</b>이고(<code>SK-AD</code> 덕트, <code>SK-PD</code> 페달, <code>SK-CS</code> 케이스, <code>SK-RM</code> 원자재, <code>SK-SB</code> 부자재), 공급사·단가도 모두 가상이다.</p>
+</section>
+
+<!-- ===================== 1. 전체 구성과 준비 ===================== -->
+<section class="page">
+  <h2>1. 강의 전체 구성과 준비</h2>
+
+  <h3>흐름과 시간표</h3>
+  <p>결과를 먼저 보여주고(세션 0) → 누구나 할 수 있는 것을 직접 해 보고(세션 1~4) → 한 단계 위를 보여주고(세션 5) → 내일 할 일을 정한다(세션 6). 세션 2·3·4에서 만든 것(정리된 품번, 서류 읽기, 바코드)이 세션 5의 프로그램에 모두 들어 있다는 것을 보여주는 것이 전체 구성의 핵심이다.</p>
   <table>
     <tr><th>#</th><th>세션</th><th>120분</th><th>90분</th><th>방식</th><th>참석자가 가져갈 것</th></tr>
     <tr><td>0</td><td>오프닝: 완성품부터</td><td class="min">0:00–0:10</td><td>5</td><td>시연</td><td>"이걸 개발자 없이 만들었다"</td></tr>
@@ -78,216 +109,563 @@
     <tr><td>5</td><td>Claude Code 시연</td><td class="min">1:25–1:50</td><td>25</td><td>시연</td><td>우리 회사 도구를 직접 만드는 단계</td></tr>
     <tr><td>6</td><td>마무리 + Q&amp;A</td><td class="min">1:50–2:00</td><td>15</td><td>강의</td><td>도입 로드맵, 내일 할 일 1개</td></tr>
   </table>
-  <p class="small"><b>90분안:</b> 쉬는 시간을 빼고, 세션 1~4는 <span class="tag must">필수</span> 표시만 진행. 세션 5는 그대로 25분, 세션 6에 Q&amp;A 5분 추가.</p>
+  <p class="small"><b>90분안:</b> 쉬는 시간을 빼고, 세션 1~4는 <span class="tag">필수</span> 표시만 진행한다. 세션 5는 그대로 25분, 세션 6에 Q&amp;A 5분을 더한다.</p>
+
+  <h3>도구의 역할</h3>
+  <table>
+    <tr><th>도구</th><th>누가</th><th>왜</th></tr>
+    <tr><td>Claude.ai</td><td>참석자 실습</td><td>웹브라우저만 있으면 된다. 대화, 파일 첨부, 아티팩트로 오늘 실습을 모두 할 수 있다</td></tr>
+    <tr><td>Claude Code</td><td>강사 시연</td><td>설치와 유료 플랜이 필요하고 터미널을 쓴다. 사무직 실습보다 "이런 단계가 있다"를 보여주는 데 맞다</td></tr>
+    <tr><td>엑셀</td><td>기본 실습 도구</td><td>참석자가 매일 쓰고 ERP·거래처 자료도 xlsx라서 다음 날 바로 적용하기 좋다</td></tr>
+    <tr><td>구글 시트</td><td>확장 시연</td><td>여러 사람이 함께 쓰는 장부와 스마트폰 입력을 보여주는 용도</td></tr>
+  </table>
+
+  <h3>자료 목록</h3>
+  <table>
+    <tr><th>자료</th><th>위치</th><th>쓰는 곳</th></tr>
+    <tr><td>프롬프트 모음집 1장 (배포)</td><td><code>materials/prompt-sheet/prompt-sheet.pdf</code></td><td>세션 1~6, 인원 + 5장 인쇄</td></tr>
+    <tr><td>부품목록 실습 파일 / 정답</td><td><code>materials/excel-practice/</code></td><td>세션 2</td></tr>
+    <tr><td>가상 거래명세서 3종 + 빈 양식</td><td><code>materials/statement-forms/</code></td><td>세션 3, 5</td></tr>
+    <tr><td>입출고관리 앱</td><td>https://cha-ssem.github.io/samkwang-inventory/</td><td>세션 0, 5</td></tr>
+    <tr><td>앱 소스, 시연 완성본</td><td><code>inventory-app/</code>, 브랜치 <code>demo/top5</code></td><td>세션 5</td></tr>
+    <tr><td>요구사항 문서(PRD)</td><td><code>inventory-prd.md</code></td><td>세션 5</td></tr>
+  </table>
 
   <div class="grid2">
     <div class="box">
-      <h3>강사가 챙길 것</h3>
+      <h4>강사가 챙길 것</h4>
       <ul class="check">
         <li>노트북 (Claude.ai 유료 계정, Claude Code 로그인)</li>
         <li>USB 바코드 스캐너, 인쇄한 라벨 3장</li>
         <li>스마트폰 (앱 접속, 카메라 스캔), 충전기</li>
         <li>인쇄한 거래명세서 <code>sample-03-packing</code>, 빈 양식</li>
         <li>녹화 영상 (라이브 수정, 서류 사진 입고, 구글 시트)</li>
-        <li>이 자료, 프롬프트 모음집 (인원 + 5장)</li>
+        <li>이 교재, 프롬프트 모음집</li>
       </ul>
     </div>
     <div class="box">
-      <h3>참석자 PC에 둘 것</h3>
+      <h4>참석자 PC에 둘 것</h4>
       <ul class="check">
         <li><code>부품목록_실습.xlsx</code></li>
         <li>거래명세서 PNG 3장 (<code>sample-01-resin</code>, <code>sample-02-parts</code>, <code>sample-03-packing</code>)</li>
         <li>Claude.ai 로그인 상태</li>
       </ul>
-      <p class="small">자료 위치: <code>materials/excel-practice/</code>, <code>materials/statement-forms/</code></p>
     </div>
   </div>
-</section>
 
-<!-- 2쪽: 당일 점검과 장애 대응 -->
-<section class="page">
-  <h2>당일 점검과 장애 대응</h2>
+  <h3>점검 순서</h3>
   <div class="grid2">
     <div class="box">
-      <h3>전날 (10-06)</h3>
+      <h4>전날 (10-06)</h4>
       <ul class="check">
-        <li>무료 계정으로 세션 1~4 실습을 끝까지 해 보기 (파일 첨부, 파일로 돌려받기, 아티팩트, 바코드)</li>
+        <li>참석자와 같은 무료 계정으로 세션 1~4 실습을 끝까지 해 보기 (파일 첨부, 파일로 돌려받기, 아티팩트, 바코드)</li>
         <li>리허설 1회, 세션 5 녹화 영상 찍기</li>
         <li>프롬프트 모음집·라벨·거래명세서 인쇄</li>
-        <li><code>demo/top5</code> 브랜치가 있는지 (<code>git branch</code>)</li>
+        <li><code>demo/top5</code> 브랜치 확인 (<code>git branch</code>)</li>
       </ul>
     </div>
     <div class="box">
-      <h3>당일 아침</h3>
+      <h4>당일 아침</h4>
       <ul class="check">
         <li>실습 파일을 참석자 PC 바탕화면에 복사</li>
-        <li>스캐너 연결, 메모장에 찍어 보기 (끝에 Enter가 오는지)</li>
+        <li>스캐너를 메모장에 찍어 보기 (영문 입력 상태, 끝에 Enter)</li>
         <li>Apps Script에서 <code>checkClaudeKey</code> 실행 → "정상"</li>
         <li>앱: 구글 시트 연결 표시, 샘플 데이터 상태</li>
-        <li><code>inventory-app</code>에서 <code>git status</code> 깨끗한지, <code>npm run dev</code> 켜 두기</li>
-        <li>프로젝터 해상도, 글자 크기 (브라우저 125%)</li>
+        <li><code>inventory-app</code>: <code>git status</code> 깨끗한지, <code>npm run dev</code> 켜 두기</li>
+        <li>프로젝터 해상도, 브라우저 글자 크기 125%</li>
       </ul>
     </div>
   </div>
-  <div class="box">
-    <h3>쉬는 시간 (세션 5 준비)</h3>
-    <p>탭 순서대로 열어 두기: ① 앱 대시보드 (로컬 <code>localhost:5173</code>) ② 배포 사이트 ③ 구글 시트 ④ 터미널 (Claude Code, <code>inventory-app</code>) ⑤ 녹화 영상 폴더. 스마트폰은 앱 화면에.</p>
-  </div>
-
-  <h3>장애 대응</h3>
-  <table>
-    <tr><th>상황</th><th>대응</th></tr>
-    <tr><td>무료 계정 사용량 제한</td><td>옆 사람과 함께, 또는 강사 화면으로 따라오게 한다. 프롬프트는 모음집으로 집에서 다시</td></tr>
-    <tr><td>파일 첨부·아티팩트가 안 됨</td><td>그 실습은 강사 시연으로 바꾸고, 참석자는 결과만 확인</td></tr>
-    <tr><td>결과가 강사와 다름</td><td>AI는 표현이 조금씩 다르다. <b>숫자(행 수·합계)만 같으면 정상</b></td></tr>
-    <tr><td>수식 오류 (#N/A, #NAME?)</td><td>품번 공백(정리 전 목록)이나 엑셀 버전(XLOOKUP 없음). 오류 메시지를 그대로 Claude에 붙여넣게 한다</td></tr>
-    <tr><td>사진을 못 읽음</td><td>서류 전체가 반듯하게, 그림자 없이 다시 찍기</td></tr>
-    <tr><td>인터넷 불안정</td><td>녹화 영상. 앱은 <code>dist/index.html</code>을 더블클릭해도 동작 (구글 시트·OCR 제외)</td></tr>
-    <tr><td>라이브 수정이 7분 넘김</td><td>멈추고 완성본으로 전환 (부록 C)</td></tr>
-    <tr><td>앱 OCR "AI 연결 키" 오류</td><td>Apps Script에서 <code>checkClaudeKey</code> 실행 → 로그의 할 일 확인. 급하면 녹화 영상</td></tr>
-    <tr><td>사내에서 Google 차단</td><td>구글 시트 부분은 녹화 영상</td></tr>
-  </table>
 </section>
 
-<!-- 세션 0, 1 -->
+<!-- ===================== 세션 0 ===================== -->
 <section class="page">
   <div class="session-head"><h2>세션 0. 오프닝: 완성품부터</h2><span class="time">10분 · 90분안 5분</span></div>
-  <p class="goal"><b>목표</b> 오늘 배우는 것이 이런 결과로 이어진다는 걸 먼저 보여줘서 끝까지 집중하게 한다.</p>
+  <p class="goal"><b>목표</b> 오늘 배우는 것이 실제 업무 도구로 이어진다는 것을 먼저 보여줘서, 끝까지 "나도 할 수 있다"는 기대를 갖게 한다.</p>
   <table class="sched">
     <tr><th>분</th><th>내용</th><th>방식</th></tr>
-    <tr><td class="min">0–2</td><td>인사, 강사 소개, 오늘의 목표 한 줄</td><td>슬라이드</td></tr>
-    <tr><td class="min">2–6</td><td><b>완성품 시연:</b> 라벨을 USB 스캐너로 찍기 → 입고 화면에서 부품 선택 → [입력] → 대시보드 재고 변화 → 스마트폰에서 같은 기록 확인</td><td>앱</td></tr>
-    <tr><td class="min">6–8</td><td>질문: <b>"이걸 만드는 데 개발자 없이 얼마나 걸렸을까요?"</b> 손을 들게 하고 답은 세션 5에서</td><td>질문</td></tr>
-    <tr><td class="min">8–10</td><td>오늘 순서: 엑셀 → 서류 사진 → 바코드 → 입출고관리. "앞의 셋은 직접, 마지막은 제가 보여드립니다"</td><td>슬라이드</td></tr>
+    <tr><td class="min">0–2</td><td>인사, 강사 소개, 강의 목표 한 줄</td><td>슬라이드</td></tr>
+    <tr><td class="min">2–6</td><td>완성품 시연 (아래 절차)</td><td>앱</td></tr>
+    <tr><td class="min">6–8</td><td>질문: "이걸 만드는 데 개발자 없이 얼마나 걸렸을까요?" 답은 세션 5에서 공개</td><td>질문</td></tr>
+    <tr><td class="min">8–10</td><td>오늘 순서: 엑셀 → 서류 사진 → 바코드 → 입출고관리. 앞의 셋은 직접, 마지막은 시연</td><td>슬라이드</td></tr>
   </table>
 
-  <div class="session-head section-gap"><h2>세션 1. Claude 기초</h2><span class="time">15분 · 90분안 10분</span></div>
-  <p class="goal"><b>목표</b> 로그인하고, 공식에 맞춘 질문 하나를 해 보고, 대화로 한 번 고쳐 본다.</p>
-  <table class="sched">
-    <tr><th>분</th><th>내용</th><th>방식</th></tr>
-    <tr><td class="min">0–3</td><td>AI 챗봇이 잘하는 것(글·요약·표·파일 분석)과 확인이 필요한 것(최신 사실·계산). Claude.ai 화면: 새 대화, 📎 첨부, 아티팩트, 프로젝트</td><td>시연</td></tr>
-    <tr><td class="min">3–6</td><td>나쁜 예 <code>납기 지연 메일 써줘</code>와 좋은 예(모음집 맨 위)를 나란히 실행 → <b>역할 + 상황 + 요청 + 출력 형식</b></td><td>시연</td></tr>
-    <tr><td class="min">6–8</td><td>보안 수칙: 도면·실제 단가·개인정보·미공개 계약은 넣지 않는다. 회사·고객사 이름은 가명</td><td>강의</td></tr>
-    <tr><td class="min">8–14</td><td><span class="tag must">필수</span> 모음집 ①이나 부록 A에서 자기 부서 프롬프트를 골라 <code>[ ]</code>만 바꿔 실행 → "다듬기 한마디"로 한 번 더</td><td>실습</td></tr>
-    <tr><td class="min">14–15</td><td>2~3명 결과를 화면으로 공유</td><td>공유</td></tr>
+  <h3>강의 내용</h3>
+  <h4>왜 결과부터 보여주는가</h4>
+  <p>사무직 참석자는 AI에 대해 "신기하지만 내 일과는 멀다"고 느끼는 경우가 많다. 자기 회사 업종(자동차 부품)에 맞춘 품번과 화면으로 <b>바코드를 찍으면 재고가 바뀌는 장면</b>을 먼저 보면, 이후 세션의 작은 실습이 어디로 이어지는지 이해한다.</p>
+  <h4>완성품 시연 절차</h4>
+  <ol>
+    <li>대시보드: 전체 품목, 안전재고 미달, 오늘 입고·출고 숫자를 보여준다.</li>
+    <li>입고 화면으로 가서 USB 스캐너로 라벨을 찍는다 → 부품이 "선택됨"으로 뜬다 (스캔은 선택만 하고 저장은 [입력]으로 한다는 점을 짚는다).</li>
+    <li>수량을 넣고 [입력] → "입고 완료"와 현재고가 바뀐 것을 보여준다.</li>
+    <li>대시보드로 돌아가 숫자가 바뀐 것을 확인한다.</li>
+    <li>스마트폰으로 같은 사이트를 열어 방금 기록이 보이는 것을 보여준다 (구글 시트 연동). 자세한 설명은 세션 5로 미룬다.</li>
+  </ol>
+  <h4>오늘 다루는 네 가지와 연결</h4>
+  <table>
+    <tr><th>세션</th><th>참석자가 직접 하는 것</th><th>세션 5 프로그램에서는</th></tr>
+    <tr><td>2 엑셀</td><td>지저분한 부품목록 정리</td><td>깨끗한 품번 체계 = 부품 마스터</td></tr>
+    <tr><td>3 서류 사진</td><td>거래명세서를 표로</td><td>"서류 사진으로 입고" 기능</td></tr>
+    <tr><td>4 바코드</td><td>라벨 생성기 만들기</td><td>라벨 출력과 스캔 입고</td></tr>
   </table>
-  <h3>짚을 점</h3>
+
+  <h3>주의할 점</h3>
   <ul>
-    <li>한 번에 완벽하게 쓰지 않아도 된다. <b>대화로 고치는 것</b>이 요령.</li>
-    <li>답에 숫자·법령·규격이 있으면 반드시 확인.</li>
+    <li>시연 전 앱은 샘플 데이터 상태로 둔다. 스캐너는 메모장에서 미리 확인한다 (한/영 상태가 한글이면 품번이 <code>ㄴㅏ-ㅁㅇ</code>처럼 들어간다).</li>
+    <li>시연은 짧게. 기능 설명은 세션 5에서 한다.</li>
   </ul>
-  <p><b>체크포인트</b> 모두 답을 하나 받았는가. 막힌 사람은 옆 사람과 함께.</p>
-  <p class="say">넘어가는 말: "글은 이 정도면 됩니다. 이제 매일 쓰는 엑셀로 가 보죠."</p>
 </section>
 
-<!-- 세션 2 -->
+<!-- ===================== 세션 1 ===================== -->
+<section class="page">
+  <div class="session-head"><h2>세션 1. Claude 기초</h2><span class="time">15분 · 90분안 10분</span></div>
+  <p class="goal"><b>목표</b> 생성형 AI가 무엇을 잘하고 무엇을 조심해야 하는지 알고, 공식에 맞춘 질문 하나를 해 보고, 대화로 한 번 고쳐 본다.</p>
+  <table class="sched">
+    <tr><th>분</th><th>내용</th><th>방식</th></tr>
+    <tr><td class="min">0–3</td><td>생성형 AI란, 잘하는 것과 조심할 것, Claude.ai 화면</td><td>시연</td></tr>
+    <tr><td class="min">3–6</td><td>나쁜 예와 좋은 예를 나란히 실행 → 프롬프트 공식</td><td>시연</td></tr>
+    <tr><td class="min">6–8</td><td>보안 수칙</td><td>강의</td></tr>
+    <tr><td class="min">8–14</td><td><span class="tag">필수</span> 부서별 프롬프트로 내 업무 질문 → 다듬기 한마디</td><td>실습</td></tr>
+    <tr><td class="min">14–15</td><td>2~3명 결과 공유</td><td>공유</td></tr>
+  </table>
+
+  <h3>강의 내용</h3>
+  <h4>생성형 AI는 어떻게 답을 만드는가</h4>
+  <p>Claude 같은 대화형 AI는 아주 많은 글을 학습해서 <b>주어진 글 다음에 올 말을 이어 쓰는</b> 방식으로 답을 만든다. 그래서 글쓰기, 요약, 바꿔 쓰기, 표 정리처럼 "글을 다루는 일"에 강하다. 반대로 사실을 데이터베이스에서 찾아오는 방식이 아니어서, 모르는 것도 그럴듯하게 지어낼 수 있다(이것을 <b>환각</b>이라 부른다).</p>
+  <table>
+    <tr><th>잘하는 일</th><th>확인이 필요한 일</th></tr>
+    <tr><td>메일·공지·보고서 초안, 회의록 요약<br />표 만들기, 양식·체크리스트 만들기<br />첨부한 파일(엑셀, PDF, 사진) 읽고 정리<br />엑셀 함수·매크로 작성, 오류 원인 설명<br />아이디어 내기, 여러 방법 비교</td><td>최신 정보 (학습 시점 이후의 일)<br />정확한 숫자 계산, 법령·규격 조문<br />회사 내부 사정 (말해 주지 않으면 모름)<br />사진 속 흐린 숫자·글자</td></tr>
+  </table>
+  <h4>AI 챗봇 비교 (간단히)</h4>
+  <p>Claude(Anthropic), ChatGPT(OpenAI), Gemini(Google)는 쓰는 방법이 거의 같다. 오늘 배우는 프롬프트 쓰는 법은 어느 도구에서나 통한다. 회사에서 어떤 도구를 쓸지는 보안 정책과 비용으로 정하면 된다.</p>
+  <h4>Claude.ai 화면 구성</h4>
+  <table>
+    <tr><th>기능</th><th>하는 일</th><th>오늘 쓰는 곳</th></tr>
+    <tr><td>새 대화</td><td>주제가 바뀌면 새 대화로 시작한다. 앞 대화 내용이 섞이지 않는다</td><td>모든 세션</td></tr>
+    <tr><td>파일 첨부 (📎)</td><td>엑셀, PDF, 사진을 올려서 읽게 한다</td><td>세션 2, 3</td></tr>
+    <tr><td>아티팩트</td><td>오른쪽 창에 바로 쓸 수 있는 결과물(문서, 작은 웹페이지)을 만든다</td><td>세션 4</td></tr>
+    <tr><td>프로젝트</td><td>자주 쓰는 지침과 자료를 묶어 두고 여러 대화에서 쓴다</td><td>세션 6 (팀 템플릿)</td></tr>
+  </table>
+  <p class="small">요금제(무료·유료)에 따라 쓸 수 있는 기능과 사용량이 다를 수 있다. 참석자와 같은 무료 계정으로 미리 확인한다.</p>
+
+  <h4>프롬프트 공식: 역할 + 상황 + 요청 + 출력 형식</h4>
+  <table>
+    <tr><th>요소</th><th>뜻</th><th>예</th></tr>
+    <tr><td>역할</td><td>누구의 입장에서 쓰는가</td><td>자동차 부품 회사 영업 담당자야</td></tr>
+    <tr><td>상황</td><td>무슨 일이 있었는가, 배경</td><td>고객사에 덕트 500개 납기가 원자재 입고 지연으로 3일 늦어진다</td></tr>
+    <tr><td>요청</td><td>무엇을 해 달라는가</td><td>알리는 메일을 써줘</td></tr>
+    <tr><td>출력 형식</td><td>어떤 모양·길이·순서로</td><td>사과, 원인, 새 납기, 재발 방지 순서로 정중하지만 짧게</td></tr>
+  </table>
+  <p>나쁜 예 <code>납기 지연 메일 써줘</code>는 받는 사람, 이유, 일정을 모르니 AI가 빈칸을 지어내거나 일반적인 글을 쓴다. 정보를 줄수록 다시 고칠 일이 줄어든다.</p>
+  <h4>한 단계 더: 결과를 좋게 하는 요령</h4>
+  <ul>
+    <li><b>예시를 하나 준다:</b> "이런 식으로: …"라고 원하는 모양을 보여주면 가장 빠르다.</li>
+    <li><b>모르면 질문하게 한다:</b> "빠진 정보가 있으면 먼저 질문해줘."</li>
+    <li><b>형식을 정한다:</b> 표, 번호 목록, 3문장, A4 반 장.</li>
+    <li><b>대화로 고친다:</b> 한 번에 완벽하게 쓰려 하지 말고 "더 짧게", "표로", "상사에게 보고하는 말투로"처럼 이어서 고친다.</li>
+    <li><b>잘 된 프롬프트는 저장한다:</b> 다음에 <code>[ ]</code>만 바꿔 다시 쓴다 (프롬프트 모음집의 방식).</li>
+  </ul>
+
+  <h4>보안 수칙</h4>
+  <table>
+    <tr><th>넣지 않는다</th><th>바꿔서 넣는다</th><th>넣어도 된다</th></tr>
+    <tr><td>고객사 도면, 실제 단가·원가, 개인정보(주민번호, 연락처), 미공개 계약·신제품 정보, 비밀번호·접속 정보</td><td>회사·고객사 이름 → 가명 (A사, 고객사1)<br />실제 숫자 → 비슷한 가상 숫자<br />사람 이름 → 담당자1</td><td>공개된 정보, 일반적인 업무 지식, 양식·틀 요청, 오늘의 가상 실습 자료</td></tr>
+  </table>
+  <ul>
+    <li>회사의 외부 AI 사용 정책이 먼저다. 정책이 없다면 "넣지 않는다" 칸을 기본 규칙으로 쓴다.</li>
+    <li>계정 설정의 개인정보 항목에서 대화 데이터를 모델 개선에 쓰는지 확인하고 회사 정책에 맞게 정한다.</li>
+  </ul>
+
+  <h3>실습</h3>
+  <ol>
+    <li>부록 A-1에서 자기 부서 프롬프트를 골라 복사한다. <code>[ ]</code> 안만 자기 상황으로 바꾼다.</li>
+    <li>답이 나오면 "다듬기 한마디" 중 하나를 이어서 보낸다.</li>
+    <li>2~3명 결과를 화면에 띄워 공식의 네 요소가 어떻게 결과에 반영됐는지 짚는다.</li>
+  </ol>
+  <p><b>체크포인트</b> 모두 답을 하나 받았는가. 막힌 사람은 옆 사람과 함께.</p>
+
+  <h3>자주 나오는 질문</h3>
+  <dl class="qa">
+    <dt>무료로도 충분한가?</dt><dd>개인 업무 초안 작성 정도는 무료로도 해 볼 수 있다. 자주 쓰거나 긴 파일을 다루면 사용량 제한에 걸릴 수 있어 유료를 검토한다.</dd>
+    <dt>AI가 쓴 글을 그대로 보내도 되나?</dt><dd>초안으로 쓰고, 사실(날짜, 수량, 이름)과 말투를 확인한 뒤 보낸다.</dd>
+    <dt>같은 질문에 답이 매번 다르다</dt><dd>정상이다. 표현은 달라도 내용이 맞으면 된다. 형식을 고정하고 싶으면 출력 형식을 자세히 적는다.</dd>
+    <dt>회사 자료를 넣어도 되나?</dt><dd>회사 정책을 따른다. 정책이 없으면 보안 수칙 표의 "넣지 않는다"를 지키고, 가명으로 바꿔서 쓴다.</dd>
+  </dl>
+</section>
+
+<!-- ===================== 세션 2 ===================== -->
 <section class="page">
   <div class="session-head"><h2>세션 2. 엑셀 × Claude</h2><span class="time">20분 · 90분안 15분</span></div>
-  <p class="goal"><b>목표</b> 지저분한 목록을 규칙을 주고 정리하게 하고, 필요한 함수를 버전에 맞게 받아 쓴다.</p>
-  <p class="small">파일: 참석자 <code>부품목록_실습.xlsx</code> (부품목록 31행 · 단가표 25 · 출고내역 7~9월 67건), 강사 <code>부품목록_정답.xlsx</code></p>
+  <p class="goal"><b>목표</b> 지저분한 목록을 규칙을 주고 정리하게 하고, 필요한 함수를 내 엑셀 버전에 맞게 받아 쓰며, 반복 작업은 매크로로 만들 수 있다는 것을 안다.</p>
   <table class="sched">
     <tr><th>분</th><th>내용</th><th>방식</th></tr>
     <tr><td class="min">0–1</td><td>파일 소개: 여러 사람이 입력해서 엉망이 된 부품목록</td><td>시연</td></tr>
-    <tr><td class="min">1–2</td><td><code>이 엑셀 정리해줘</code>만 보내 보기 → 결과가 사람마다 다름</td><td>실습</td></tr>
-    <tr><td class="min">2–8</td><td><span class="tag must">필수</span> <b>실습 1</b> 규칙 7가지 프롬프트(부록 B) → 정리 결과 검수</td><td>실습</td></tr>
-    <tr><td class="min">8–14</td><td><span class="tag must">필수</span> <b>실습 2</b> 단가 찾아오기 함수(버전 넣어서) → 9월 출고량 SUMIFS</td><td>실습</td></tr>
-    <tr><td class="min">14–16</td><td>정리 <b>전</b> 목록에 같은 함수를 넣으면 "단가 없음"이 나오는 모습 → 정리하는 이유</td><td>시연</td></tr>
-    <tr><td class="min">16–19</td><td>매크로: 보고서 서식 VBA → <code>Alt+F11</code> → 모듈 → <code>F5</code> → .xlsm 저장</td><td>시연</td></tr>
-    <tr><td class="min">19–20</td><td>정리: 규칙을 주고, 버전을 알려주고, 검수한다</td><td>강의</td></tr>
+    <tr><td class="min">1–2</td><td>"이 엑셀 정리해줘"만 보내 보기 → 결과가 사람마다 다름</td><td>실습</td></tr>
+    <tr><td class="min">2–8</td><td><span class="tag">필수</span> 실습 1: 규칙 7가지로 정리 → 검수</td><td>실습</td></tr>
+    <tr><td class="min">8–14</td><td><span class="tag">필수</span> 실습 2: 단가 찾아오기 함수, 9월 출고량 SUMIFS</td><td>실습</td></tr>
+    <tr><td class="min">14–16</td><td>정리 전 목록에서 함수가 실패하는 모습</td><td>시연</td></tr>
+    <tr><td class="min">16–19</td><td>매크로 만들고 실행</td><td>시연</td></tr>
+    <tr><td class="min">19–20</td><td>정리: 규칙, 버전, 검수</td><td>강의</td></tr>
   </table>
-  <h3>짚을 점</h3>
+
+  <h3>실습 파일</h3>
+  <table>
+    <tr><th>파일</th><th>시트</th><th>내용</th></tr>
+    <tr><td rowspan="3"><code>부품목록_실습.xlsx</code><br />(참석자)</td><td>부품목록</td><td>부품 25개가 31행으로. 일부러 표기를 흐트러뜨렸다 (중복 4, 빈 행, 메모 행 포함)</td></tr>
+    <tr><td>단가표</td><td>품번 25개의 가상 단가 (부품목록과 순서가 다르게)</td></tr>
+    <tr><td>출고내역</td><td>2026년 7~9월 출고 67건 (출고일은 실제 날짜 형식)</td></tr>
+    <tr><td><code>부품목록_정답.xlsx</code><br />(강사)</td><td colspan="2">정리된 목록 + 단가·9월 출고량·확인 열 함수, 월별 출고 집계(검산), 고친 내용(숨겨 둔 문제 10가지)</td></tr>
+  </table>
+
+  <h3>강의 내용</h3>
+  <h4>Claude가 엑셀 파일을 다루는 방식</h4>
+  <p>파일을 첨부하면 Claude가 내용을 읽고, 필요하면 내부적으로 계산·정리를 해서 결과를 표로 보여주거나 새 엑셀 파일로 돌려준다. 계정·환경에 따라 파일로 돌려받지 못할 수 있는데, 그럴 때는 "표로 보여줘"라고 한 뒤 복사해서 붙여넣는다.</p>
+
+  <h4>데이터 정리가 왜 중요한가</h4>
+  <p>엑셀의 찾기·합계 함수는 <b>글자가 정확히 같아야</b> 같은 것으로 본다. <code>SK-AD-001</code>과 <code>sk-ad-001</code>, <code>SK-AD-001 </code>(뒤에 공백)은 사람 눈에는 같지만 함수에는 다른 값이다. 그래서 정리 안 된 목록에서는 단가를 못 찾고(#N/A), 합계가 빠지고, 중복이 생긴다. 실습 2에서 이 현상을 직접 보여준다.</p>
+  <table>
+    <tr><th>정리 원칙</th><th>설명</th></tr>
+    <tr><td>기준 열(키)을 하나로</td><td>품번처럼 행을 구별하는 열은 형식을 엄격하게 통일한다 (대문자, 하이픈, 자릿수)</td></tr>
+    <tr><td>한 칸에 한 가지 값</td><td>"150개", "약 80"처럼 숫자와 글자를 섞지 않는다. 단위는 단위 칸에</td></tr>
+    <tr><td>같은 뜻은 같은 표기</td><td>EA·ea·개 → EA. 거래처 이름도 한 가지로</td></tr>
+    <tr><td>날짜는 날짜 형식으로</td><td>2026.9.2, 9/3, 20260903 → 2026-09-02. 글자로 된 날짜는 계산이 안 된다</td></tr>
+    <tr><td>자료가 아닌 행은 빼기</td><td>빈 행, 메모 행, 중간 합계 행은 표 밖으로</td></tr>
+  </table>
+
+  <h4>"정리해줘"보다 규칙이 나은 이유</h4>
+  <p>"정리"의 기준은 사람마다 다르다. 규칙 없이 시키면 결과가 사람마다, 할 때마다 달라진다. 규칙 7가지(부록 A-2)를 적어 주면 결과가 일정해지고, <b>이 규칙 목록이 그대로 팀의 데이터 입력 기준</b>이 된다. 또 <code>1,5</code>처럼 사람도 헷갈리는 값(15인가 1,500인가)은 AI도 추측하면 안 되므로 "애매하면 지우지 말고 표시"하라고 시킨다.</p>
+
+  <h4>찾아오기 함수: XLOOKUP, VLOOKUP, INDEX/MATCH</h4>
+  <table>
+    <tr><th>함수</th><th>쓸 수 있는 버전</th><th>특징</th></tr>
+    <tr><td>XLOOKUP</td><td>엑셀 2021, Microsoft 365</td><td>가장 쉽다. 찾을 값, 찾을 범위, 가져올 범위, 없을 때 값. 왼쪽 열도 가져올 수 있다</td></tr>
+    <tr><td>VLOOKUP</td><td>모든 버전</td><td>찾는 열이 범위의 맨 왼쪽이어야 한다. 마지막 인수를 <code>FALSE</code>(정확히 일치)로 꼭 넣는다. 빼면 비슷한 값을 찾아 틀린 답이 나올 수 있다</td></tr>
+    <tr><td>INDEX/MATCH</td><td>모든 버전</td><td>MATCH로 몇 번째 행인지 찾고 INDEX로 가져온다. 방향 제약이 없다</td></tr>
+  </table>
+  <p>프롬프트에 <b>"엑셀 2016에서 쓸 수 있는 함수로"</b>처럼 버전을 적으면 그 버전에 맞는 함수를 받는다. 버전은 엑셀 메뉴 파일 → 계정 → 정보에서 확인한다. XLOOKUP이 없는 버전에서 쓰면 <code>#NAME?</code> 오류가 난다.</p>
+
+  <h4>조건별 합계: SUMIFS</h4>
+  <p><code>SUMIFS(더할 범위, 조건 범위1, 조건1, 조건 범위2, 조건2, …)</code>. 품번이 같고 날짜가 9월 1일~30일인 수량만 더할 때 날짜 조건은 <code>"&gt;="&amp;DATE(2026,9,1)</code>처럼 비교 기호와 날짜를 이어 붙인다. 출고일이 글자로 저장돼 있으면 날짜 조건이 맞지 않아 0이 나오므로, 실습 파일의 출고일은 실제 날짜 형식으로 넣어 두었다.</p>
+
+  <h4>자주 보는 오류</h4>
+  <table>
+    <tr><th>오류</th><th>흔한 원인</th></tr>
+    <tr><td><code>#N/A</code></td><td>찾는 값이 없다. 공백·대소문자·하이픈 차이, 품번 정리 안 됨</td></tr>
+    <tr><td><code>#NAME?</code></td><td>함수 이름이 틀렸거나 그 버전에 없는 함수(XLOOKUP)</td></tr>
+    <tr><td><code>#VALUE!</code></td><td>숫자 자리에 글자("150개")가 들어 있다</td></tr>
+    <tr><td>합계가 0</td><td>조건 열의 형식이 다르다 (글자로 된 날짜·숫자)</td></tr>
+  </table>
+  <p>오류가 나면 <b>수식과 오류 메시지를 그대로 Claude에 붙여넣고 "왜 이래?"</b>라고 물어보게 한다. 원인과 고친 수식을 같이 받는다.</p>
+
+  <h4>매크로(VBA)</h4>
+  <p>매크로는 엑셀 안에서 돌아가는 작은 프로그램이다. 매일 하는 서식 맞추기, 시트 복사, 인쇄 설정 같은 반복 작업을 버튼 하나로 만든다. 예전에는 "매크로 기록"으로 만들거나 VBA를 배워야 했는데, 이제는 원하는 동작을 말로 설명하면 Claude가 코드를 써 준다.</p>
+  <ol>
+    <li><code>Alt + F11</code> → VBA 편집기 → 삽입 → 모듈 → 코드 붙여넣기</li>
+    <li>커서를 코드 안에 두고 <code>F5</code> (또는 엑셀에서 보기 → 매크로)</li>
+    <li>저장은 <b>Excel 매크로 사용 통합 문서(.xlsm)</b>. .xlsx로 저장하면 매크로가 지워진다</li>
+  </ol>
   <ul>
-    <li>규칙을 적어 주면 결과가 일정해진다. 이 규칙 목록이 그대로 <b>팀의 데이터 입력 기준</b>이 된다.</li>
-    <li><code>1,5</code>처럼 사람도 헷갈리는 값은 AI도 추측하면 안 된다. "애매하면 표시하라"고 시킨다.</li>
-    <li>함수는 <b>내 엑셀 버전</b>을 알려주고 받는다.</li>
-    <li>매크로는 보안 경고·회사 정책으로 막힐 수 있다. 참석자는 결과만 본다.</li>
+    <li>매크로가 든 파일은 열 때 보안 경고가 뜨고, 회사 정책으로 막혀 있을 수 있다. 인터넷에서 받은 .xlsm은 특히 조심한다.</li>
+    <li>매크로는 실행 취소(Ctrl+Z)가 안 된다. 원본을 복사해 두고 실행한다.</li>
+    <li>Mac 엑셀은 일부 기능(인쇄 설정 등)이 다르게 동작할 수 있고, 웹 엑셀은 VBA를 실행하지 못한다.</li>
   </ul>
-  <div class="box">
-    <h3>체크포인트 (정답은 부록 B)</h3>
-    <ul>
-      <li>실습 1: 부품 <b>25개</b>, 확인 필요 <b>4건</b> (<code>1,5</code> SK-SB-003, <code>약 80</code> SK-AD-006, <code>1백20</code> SK-CS-002, 빈 칸 SK-PD-004)</li>
-      <li>실습 2: 9월 출고 없는 부품 <b>11개</b>, 7~9월 출고 합계 <b>2,738개</b></li>
-    </ul>
-  </div>
-  <p><b>90분안</b> 실습 1(규칙 버전만) 6분 + 실습 2(찾아오기 함수만) 5분 + 매크로는 결과 화면만 2분 + 정리 2분</p>
-  <p class="say">넘어가는 말: "엑셀 파일은 이렇게 다룹니다. 그런데 종이 서류는요? 거래명세서를 손으로 옮겨 적고 계시죠."</p>
+
+  <h3>실습 절차와 정답</h3>
+  <ol>
+    <li><b>대충 시켜 보기:</b> 파일 첨부 → <code>이 엑셀 정리해줘</code>. 결과만 본다.</li>
+    <li><b>실습 1:</b> 규칙 7가지 프롬프트(부록 A-2). 검수: 부품 <b>25개</b>, 확인 필요 <b>4건</b>(<code>1,5</code> SK-SB-003, <code>약 80</code> SK-AD-006, <code>1백20</code> SK-CS-002, 빈 칸 SK-PD-004), <code>SK-AD-5</code>→<code>SK-AD-005</code>, <code>SK_PD_003</code>→<code>SK-PD-003</code>, <code>SK-RM-03</code>→<code>SK-RM-003</code>.</li>
+    <li><b>실습 2:</b> 단가 찾아오기(버전 넣기), 9월 출고량 SUMIFS, 시간이 남으면 조건부 서식 (부록 A-2, 정답은 부록 B).</li>
+    <li><b>시연:</b> 정리 전 목록에 같은 단가 수식 → <code>sk-ad-001</code>, <code>SK AD 003</code> 등에서 "단가 없음".</li>
+    <li><b>시연:</b> 매크로 프롬프트(부록 A-2) → 실행.</li>
+  </ol>
+
+  <h3>자주 나오는 질문</h3>
+  <dl class="qa">
+    <dt>회사 실제 엑셀을 올려도 되나?</dt><dd>회사 정책을 따른다. 단가·고객 정보가 있는 열은 지우거나 가상 값으로 바꿔서 올린다. 구조(열 이름, 형식)만 있으면 함수와 정리 규칙은 받을 수 있다.</dd>
+    <dt>파일이 크면?</dt><dd>너무 크면 처리가 느리거나 실패한다. 필요한 시트·열만 남겨 올리거나, 일부 행만 올려 규칙과 함수를 받은 뒤 엑셀에서 전체에 적용한다.</dd>
+    <dt>함수를 받았는데 이해가 안 된다</dt><dd>"이 수식을 한 부분씩 설명해줘"라고 하면 인수별로 풀어 준다.</dd>
+    <dt>정리를 매달 해야 한다</dt><dd>규칙 프롬프트를 저장해 두고 매달 같은 프롬프트를 쓴다. 더 나아가 같은 정리를 하는 매크로를 만들어 달라고 할 수 있다.</dd>
+  </dl>
 </section>
 
-<!-- 세션 3, 4 -->
+<!-- ===================== 세션 3 ===================== -->
 <section class="page">
   <div class="session-head"><h2>세션 3. 서류 사진 → 표</h2><span class="time">15분 · 90분안 10분</span></div>
-  <p class="goal"><b>목표</b> 거래명세서 사진을 표로 바꿔 엑셀에 옮기고, 숫자로 검수하는 습관을 들인다.</p>
+  <p class="goal"><b>목표</b> 거래명세서 사진을 표로 바꿔 엑셀에 옮기고, AI가 읽은 결과를 숫자로 검수하는 습관을 들인다.</p>
   <table class="sched">
     <tr><th>분</th><th>내용</th><th>방식</th></tr>
     <tr><td class="min">0–1</td><td>문제 제기: 거래명세서를 손으로 옮기는 시간과 실수</td><td>강의</td></tr>
-    <tr><td class="min">1–5</td><td><span class="tag must">필수</span> <code>sample-01-resin.png</code> → 표 (프롬프트 부록 B)</td><td>실습</td></tr>
-    <tr><td class="min">5–7</td><td><span class="tag must">필수</span> 탭 구분으로 받아 엑셀 A1에 붙여넣기</td><td>실습</td></tr>
-    <tr><td class="min">7–10</td><td><span class="tag must">필수</span> 검수: <b>행 수 4 · 수량 합계 75</b>를 서류 합계 칸과 비교. <code>0</code>/<code>O</code>, <code>1</code>/<code>I</code> 조심</td><td>실습</td></tr>
-    <tr><td class="min">10–13</td><td>응용 하나: 귀사 품번 빈 서류(<code>sample-02</code>) 또는 처음 보는 품목(<code>sample-03</code>)</td><td>실습</td></tr>
-    <tr><td class="min">13–14</td><td>손글씨 양식을 찍어 올려 틀리는 곳 확인 → 검수가 필요한 이유</td><td>시연</td></tr>
-    <tr><td class="min">14–15</td><td>앱 연결 예고: 같은 사진을 앱 "서류 사진으로 입고"에 올리는 모습 30초</td><td>시연</td></tr>
+    <tr><td class="min">1–5</td><td><span class="tag">필수</span> 1단계: <code>sample-01-resin.png</code> → 표</td><td>실습</td></tr>
+    <tr><td class="min">5–7</td><td><span class="tag">필수</span> 2단계: 탭 구분으로 받아 엑셀에 붙여넣기</td><td>실습</td></tr>
+    <tr><td class="min">7–10</td><td><span class="tag">필수</span> 3단계: 행 수·합계 검수</td><td>실습</td></tr>
+    <tr><td class="min">10–13</td><td>4단계 응용 하나 (sample-02 또는 sample-03)</td><td>실습</td></tr>
+    <tr><td class="min">13–14</td><td>손글씨 양식 찍어 올리기</td><td>시연</td></tr>
+    <tr><td class="min">14–15</td><td>앱 "서류 사진으로 입고" 예고 30초</td><td>시연</td></tr>
   </table>
-  <ul>
-    <li>필요한 열만 지정하고, <b>단가·금액은 빼라</b>고 시킨다.</li>
-    <li>"읽기 어려운 칸은 <b>추측하지 말고 '확인 필요'</b>": 그럴듯한 오답을 막는 한 줄.</li>
-    <li>응용: 납품서, 검사성적서, 명함, 손글씨 재고 장부.</li>
-  </ul>
-  <p class="say">넘어가는 말: "서류를 데이터로 바꿨으니, 이제 물건에 데이터를 붙여 볼까요? 바코드입니다."</p>
 
-  <div class="session-head section-gap"><h2>세션 4. 바코드 라벨 만들기</h2><span class="time">15분 · 90분안 10분</span></div>
-  <p class="goal"><b>목표</b> 말로 설명해서 라벨 생성기를 만들고, 출력한 라벨이 실제로 스캔되는 것을 본다.</p>
-  <table class="sched">
-    <tr><th>분</th><th>내용</th><th>방식</th></tr>
-    <tr><td class="min">0–2</td><td>Code128(짧은 글자, USB 스캐너) vs QR(스마트폰). 품번 체계 <code>SK-분류-번호</code> = 바코드 내용</td><td>강의</td></tr>
-    <tr><td class="min">2–8</td><td><span class="tag must">필수</span> 라벨 생성기 프롬프트(부록 B) → 품번 5개 → 라벨 확인</td><td>실습</td></tr>
-    <tr><td class="min">8–11</td><td>다듬기 하나: "QR도 같이" / "품명과 보관 위치도" / "A4 3×8 라벨지 크기로"</td><td>실습</td></tr>
-    <tr><td class="min">11–14</td><td>라벨 인쇄 → USB 스캐너로 품번 입력, 스마트폰으로 QR 읽기</td><td>시연</td></tr>
-    <tr><td class="min">14–15</td><td>"이 라벨을 찍으면 재고가 바뀌는 프로그램, 쉬고 나서 보여드립니다"</td><td>강의</td></tr>
+  <h3>실습 서류</h3>
+  <table>
+    <tr><th>파일</th><th>공급사</th><th>명세서 번호</th><th>품목</th><th>수량 합계</th><th>보여줄 것</th></tr>
+    <tr><td><code>sample-01-resin</code></td><td>대한수지(가상)</td><td>DS-2610-0012</td><td>4</td><td class="num">75</td><td>기본: 사진 → 표 → 엑셀</td></tr>
+    <tr><td><code>sample-02-parts</code></td><td>동방부품(가상)</td><td>DB-1002-338</td><td>5</td><td class="num">565</td><td>귀사 품번이 빈 행 → 부품목록으로 채우기</td></tr>
+    <tr><td><code>sample-03-packing</code></td><td>세진포장(가상)</td><td>SJ-26100045</td><td>3</td><td class="num">1,360</td><td>부품목록에 없는 품목 찾기</td></tr>
+    <tr><td><code>blank-form</code></td><td colspan="5">빈 양식. 인쇄해서 손으로 써 보고 찍어서 올리기</td></tr>
   </table>
-  <p><b>체크포인트</b> 라벨 5개가 보이고, 바코드 아래 품번이 맞는가. 아티팩트가 안 되는 계정이면 강사 화면으로.</p>
+  <p class="small">모든 서류에 "견본" 표시가 있고 공급사·사업자번호·단가는 가상이다. 서류마다 "귀사 품번" 열을 두어 우리 품번으로 바로 연결할 수 있게 만들었다.</p>
+
+  <h3>강의 내용</h3>
+  <h4>OCR과 AI 사진 읽기의 차이</h4>
+  <p>OCR(광학 문자 인식)은 사진 속 글자를 텍스트로 바꾸는 기술이다. 예전 OCR은 글자만 뽑아서 표의 칸 구조나 "이 숫자가 수량인지 단가인지"를 잘 구분하지 못했다. Claude 같은 AI는 사진을 보고 <b>표의 구조와 각 칸의 의미까지 이해해서</b> "수량 열만", "단가는 빼고"처럼 원하는 형태로 정리할 수 있다. 다만 흐린 글자를 그럴듯하게 채울 수 있어 검수가 반드시 필요하다.</p>
+  <h4>정확도에 영향을 주는 것</h4>
+  <table>
+    <tr><th>좋게 하는 것</th><th>나쁘게 하는 것</th></tr>
+    <tr><td>서류 전체가 화면에 반듯하게, 밝은 곳에서<br />인쇄된 글씨, 선명한 표 테두리<br />한 장씩 찍기</td><td>기울어짐, 그림자, 구김, 반사<br />손글씨, 흐린 팩스·복사본<br />일부가 잘린 사진</td></tr>
+  </table>
+  <h4>프롬프트의 세 가지 장치</h4>
+  <ul>
+    <li><b>열을 지정한다:</b> 귀사 품번, 공급사 코드, 품명, 규격, 단위, 수량. 엑셀에 붙일 모양을 미리 정한다.</li>
+    <li><b>민감한 칸은 뺀다:</b> 단가·금액. 필요 없는 정보는 처음부터 받지 않는다.</li>
+    <li><b>추측 금지:</b> "읽기 어려운 칸은 추측하지 말고 '확인 필요'". 그럴듯한 오답을 막는 가장 중요한 한 줄이다.</li>
+  </ul>
+  <h4>검수하는 법</h4>
+  <ol>
+    <li><b>행 수</b>: 서류의 품목 수와 표의 행 수가 같은가.</li>
+    <li><b>합계</b>: 서류 아래 합계 칸의 수량과 표의 수량 합계가 같은가. Claude에게 "행 수와 합계를 알려주고 서류 합계 칸과 비교해줘"라고 시킬 수 있다.</li>
+    <li><b>품번</b>: 한 글자만 틀려도 다른 부품이 된다. 특히 <code>0</code>과 <code>O</code>, <code>1</code>과 <code>I</code>, <code>5</code>와 <code>S</code>, <code>8</code>과 <code>B</code>.</li>
+  </ol>
+  <h4>개인정보와 회사 정보</h4>
+  <p>실제 거래명세서에는 단가, 사업자번호, 담당자 이름·연락처가 있다. 회사 정책을 확인하고, 필요하면 해당 부분을 가리고 찍는다. 프롬프트에서 단가·금액을 빼도 사진에는 남아 있다는 점을 기억한다.</p>
+
+  <h3>실습 절차와 정답</h3>
+  <ol>
+    <li><b>1단계</b> <code>sample-01-resin.png</code> 첨부 → 부록 A-3의 프롬프트. 정답: 4행 (SK-RM-001 PP 수지 40, SK-RM-002 ABS 수지 20, SK-RM-003 PA66 수지 10, SK-RM-004 마스터배치 블랙 5).</li>
+    <li><b>2단계</b> "탭으로 구분한 형식으로" → 엑셀 A1에 붙여넣기. "엑셀 파일로 만들어줘"도 가능.</li>
+    <li><b>3단계</b> 행 수 <b>4</b>, 수량 합계 <b>75</b>.</li>
+    <li><b>4단계 응용</b> (하나만)
+      <ul>
+        <li>A. <code>sample-02</code> + 정리된 부품목록 첨부 → 빈 귀사 품번을 품명·규격으로 채우고 "(추정)" 표시. 고무 패킹 → SK-SB-002, 페달 암 브래킷 → SK-PD-003.</li>
+        <li>B. <code>sample-03</code> + 부품목록 첨부 → 없는 품목 찾기와 새 품번 제안. 포장 테이프, SK-SB-006 정도.</li>
+        <li>C. 손글씨 (강사): 빈 양식에 몇 줄 써서 찍어 올리고 틀린 곳을 보여준다.</li>
+      </ul>
+    </li>
+  </ol>
+  <p>전체 정답 표는 부록 B-3.</p>
+
+  <h3>앱과의 연결 (세션 5 예고)</h3>
+  <p>앱의 입고 → "서류 사진으로 입고"는 지금 손으로 한 과정을 자동으로 한다: 사진 → AI가 표로 → 우리 품번에 자동 연결 → 사람이 검수 → [일괄 입력]으로 재고 반영. 여기서는 30초만 보여주고 자세한 구조는 세션 5에서 설명한다.</p>
+
+  <h3>자주 나오는 질문</h3>
+  <dl class="qa">
+    <dt>스캐너로 스캔한 PDF도 되나?</dt><dd>된다. 사진보다 반듯해서 더 잘 읽는 편이다. 여러 쪽이면 필요한 쪽만 올리는 게 좋다.</dd>
+    <dt>여러 장을 한 번에 올려도 되나?</dt><dd>가능하지만 검수가 어려워진다. 처음에는 한 장씩 하고 익숙해지면 묶는다.</dd>
+    <dt>손글씨는 얼마나 믿을 수 있나?</dt><dd>글씨체에 따라 차이가 크다. 숫자와 품번은 반드시 대조한다.</dd>
+    <dt>매번 같은 거래처 서류라면?</dt><dd>그 거래처용 프롬프트를 저장해 두거나, 프로젝트에 "이 거래처 명세서 읽는 규칙"을 지침으로 넣어 두면 매번 같은 형식으로 받는다.</dd>
+  </dl>
 </section>
 
-<!-- 세션 5, 6 -->
+<!-- ===================== 세션 4 ===================== -->
+<section class="page">
+  <div class="session-head"><h2>세션 4. 바코드 라벨 만들기</h2><span class="time">15분 · 90분안 10분</span></div>
+  <p class="goal"><b>목표</b> 바코드의 종류와 품번 체계의 관계를 알고, 말로 설명해서 라벨 생성기를 만들고, 출력한 라벨이 실제로 스캔되는 것을 본다.</p>
+  <table class="sched">
+    <tr><th>분</th><th>내용</th><th>방식</th></tr>
+    <tr><td class="min">0–2</td><td>바코드 종류, 품번 체계</td><td>강의</td></tr>
+    <tr><td class="min">2–8</td><td><span class="tag">필수</span> 라벨 생성기 만들기 → 품번 5개 → 라벨 확인</td><td>실습</td></tr>
+    <tr><td class="min">8–11</td><td>다듬기 하나</td><td>실습</td></tr>
+    <tr><td class="min">11–14</td><td>인쇄 → USB 스캐너, 스마트폰 QR 스캔</td><td>시연</td></tr>
+    <tr><td class="min">14–15</td><td>세션 5 연결</td><td>강의</td></tr>
+  </table>
+
+  <h3>강의 내용</h3>
+  <h4>바코드의 종류</h4>
+  <table>
+    <tr><th>종류</th><th>모양</th><th>담는 내용</th><th>주로 쓰는 곳</th></tr>
+    <tr><td>Code128</td><td>1차원 (막대)</td><td>영문·숫자·기호. 짧은 글자를 촘촘하게 담는다</td><td>사내 품번·로트 라벨, 물류. <b>오늘 실습</b></td></tr>
+    <tr><td>QR 코드</td><td>2차원 (사각 점)</td><td>긴 글자, 주소(URL)까지. 일부가 가려져도 읽도록 오류 복원 기능이 있다</td><td>스마트폰 카메라로 읽을 때, 정보가 많을 때</td></tr>
+    <tr><td>EAN-13</td><td>1차원</td><td>숫자 13자리</td><td>판매용 상품(마트). 사내 품번용은 아니다</td></tr>
+  </table>
+  <p>USB 스캐너로 빠르게 찍을 때는 Code128, 스마트폰 카메라로 찍을 때는 QR이 편하다. 앱의 라벨 출력은 기본으로 두 가지를 함께 넣고, 하나만 고를 수도 있다.</p>
+
+  <h4>품번 체계와 바코드</h4>
+  <p>바코드는 <b>품번 글자를 그대로</b> 담는다. 그래서 품번 체계가 곧 바코드 설계다. 실습 품번 <code>SK-분류-일련번호</code>(예: <code>SK-AD-001</code>)는 다음 원칙을 따른다.</p>
+  <ul>
+    <li>영문 대문자·숫자·하이픈만 쓴다 (스캐너와 시스템 사이에서 깨지지 않는다).</li>
+    <li>분류 코드로 무엇인지 알 수 있다 (AD 덕트, PD 페달, CS 케이스, RM 원자재, SB 부자재).</li>
+    <li>일련번호 자릿수를 고정한다 (001, 002 … 정렬이 맞는다).</li>
+    <li>세션 2의 정리 규칙과 같다: 정리된 품번이어야 라벨과 시스템이 맞는다.</li>
+  </ul>
+
+  <h4>USB 바코드 스캐너의 동작</h4>
+  <p>일반 USB 스캐너는 <b>키보드처럼</b> 동작한다. 바코드를 읽으면 그 글자를 키보드로 친 것처럼 입력하고, 마지막에 Enter를 보낸다. 그래서 메모장, 엑셀, 웹페이지 어디에든 입력된다.</p>
+  <ul>
+    <li><b>한/영 상태가 한글이면</b> 품번이 <code>ㄴㅏ-ㅁㅇ-001</code>처럼 들어간다. 영문 상태로 바꾼다.</li>
+    <li>커서가 입력칸에 있어야 한다. 앱의 입고·출고 화면은 늘 스캔 칸에 커서를 둔다.</li>
+    <li>끝에 Enter를 보내지 않도록 설정된 스캐너도 있다. 설명서의 설정 바코드로 바꿀 수 있다.</li>
+  </ul>
+
+  <h4>라벨 인쇄 요령</h4>
+  <ul>
+    <li>바코드 좌우에 빈 여백(조용 영역)이 있어야 읽힌다. 라벨 끝까지 꽉 채우지 않는다.</li>
+    <li>너무 작게 인쇄하면 막대가 뭉개진다. 처음에는 크게 인쇄해서 스캔해 보고 줄인다.</li>
+    <li>라벨지(예: A4 3×8)를 쓸 때는 규격에 맞춰 달라고 요청한다.</li>
+  </ul>
+
+  <h4>아티팩트로 작은 프로그램 만들기</h4>
+  <p>아티팩트는 Claude가 대화 옆 창에 바로 쓸 수 있는 결과물을 만드는 기능이다. 문서뿐 아니라 입력칸과 단추가 있는 작은 웹페이지도 만든다. 오늘은 "품번을 넣으면 바코드 라벨이 나오는 페이지"를 말로 설명해서 만든다. 고치는 것도 말로 한다.</p>
+
+  <h3>실습 절차</h3>
+  <ol>
+    <li>부록 A-4의 프롬프트로 라벨 생성기를 만든다.</li>
+    <li>예시 품번 5개를 넣어 라벨이 나오는지, 바코드 아래 품번이 맞는지 확인한다.</li>
+    <li>다듬기 하나: "QR도 같이", "품명과 보관 위치도 표시", "A4 3×8 라벨지 크기로".</li>
+    <li>강사가 인쇄 → USB 스캐너로 메모장에 찍어 품번이 그대로 들어오는 것, 스마트폰 카메라로 QR을 읽는 것을 보여준다.</li>
+    <li>앱의 부품 관리 → 라벨 출력 결과와 비교해서 보여준다.</li>
+  </ol>
+  <p><b>체크포인트</b> 라벨 5개가 보이고 품번이 맞는가. 아티팩트가 안 되는 계정이면 강사 화면으로 진행한다.</p>
+
+  <h3>자주 나오는 질문</h3>
+  <dl class="qa">
+    <dt>스캐너는 어떤 걸 사야 하나?</dt><dd>USB 키보드 방식(HID)으로 Code128과 QR을 모두 읽는 2D 스캐너면 된다. 무선이 필요하면 블루투스 제품.</dd>
+    <dt>기존 품번이 한글이 섞여 있다</dt><dd>바코드에는 영문·숫자 체계가 안전하다. 기존 품번과 새 바코드 품번을 대응표로 연결하는 방법이 있다.</dd>
+    <dt>라벨 프린터가 따로 필요한가?</dt><dd>처음에는 A4 라벨지와 일반 프린터로 충분하다. 수량이 많고 현장에서 바로 뽑아야 하면 라벨 프린터를 검토한다.</dd>
+  </dl>
+</section>
+
+<!-- ===================== 세션 5 ===================== -->
 <section class="page">
   <div class="session-head"><h2>세션 5. Claude Code 시연: 입출고관리</h2><span class="time">25분 (90분안 동일)</span></div>
-  <p class="goal"><b>목표</b> "말로 설명하면 우리 회사에 맞는 프로그램이 만들어진다"를 보여주고, 실제 쓰는 모습까지 연결한다.</p>
+  <p class="goal"><b>목표</b> "말로 설명하면 우리 회사에 맞는 프로그램이 만들어진다"를 보여주고, 실제 쓰는 모습(스캔 → 재고, 서류 사진 → 입고, 스마트폰 공동 작업)까지 연결한다.</p>
   <table class="sched">
     <tr><th>분</th><th>내용</th><th>방식</th></tr>
-    <tr><td class="min">0–3</td><td><b>오프닝 답 공개:</b> Claude Code와 함께 <b>반나절</b> 만에 만들었다. PRD 화면을 보여주며 "이 문서도 대화로 만들었다"</td><td>시연</td></tr>
-    <tr><td class="min">3–9</td><td>둘러보기: 부품 등록(품번 제안) → 입고 스캔 → 출고 스캔(안전재고 경고) → 재고 현황 → 이력 → CSV를 엑셀로</td><td>시연</td></tr>
-    <tr><td class="min">9–16</td><td><b>라이브 수정</b> "대시보드 출고 TOP 5 카드" (대본 부록 C, <b>7분 넘으면 전환</b>)</td><td>라이브</td></tr>
-    <tr><td class="min">16–20</td><td><b>서류 사진으로 입고:</b> <code>sample-03</code> 인쇄본을 스마트폰으로 찍기 → 검수 표 → 포장 테이프는 품번 제안(SK-SB-006)으로 등록 → [일괄 입력] → 재고 반영</td><td>시연</td></tr>
-    <tr><td class="min">20–24</td><td><b>구글 시트 공동 작업:</b> "자재팀은 입고, 생산팀은 출고하면?" → 스마트폰으로 출고 → PC와 구글 시트에 반영</td><td>시연</td></tr>
-    <tr><td class="min">24–25</td><td>정리: 만든 것, 걸린 시간, 사람이 한 일 (원하는 것을 말하고 확인하기)</td><td>강의</td></tr>
+    <tr><td class="min">0–3</td><td>오프닝 답 공개: Claude Code와 함께 <b>반나절</b>. PRD 화면</td><td>시연</td></tr>
+    <tr><td class="min">3–9</td><td>기능 둘러보기</td><td>시연</td></tr>
+    <tr><td class="min">9–16</td><td>라이브 수정 (7분 넘으면 완성본으로)</td><td>라이브</td></tr>
+    <tr><td class="min">16–20</td><td>서류 사진으로 입고</td><td>시연</td></tr>
+    <tr><td class="min">20–24</td><td>구글 시트 공동 작업</td><td>시연</td></tr>
+    <tr><td class="min">24–25</td><td>정리: 사람이 한 일</td><td>강의</td></tr>
   </table>
+
+  <h3>강의 내용</h3>
+  <h4>Claude Code란</h4>
+  <p>Claude Code는 내 컴퓨터에서 동작하는 AI 개발 도구다. 원하는 것을 말로 설명하면 파일을 만들고 고치고, 프로그램을 실행하고, 테스트를 돌려 결과를 확인하는 일까지 한다.</p>
+  <table>
+    <tr><th></th><th>Claude.ai</th><th>Claude Code</th></tr>
+    <tr><td>쓰는 곳</td><td>웹브라우저</td><td>내 PC의 터미널 (설치 필요)</td></tr>
+    <tr><td>만드는 것</td><td>답변, 문서, 작은 아티팩트</td><td>여러 파일로 된 실제 프로그램</td></tr>
+    <tr><td>할 수 있는 일</td><td>대화 안에서 결과 보여주기</td><td>파일 읽기·쓰기, 실행, 테스트, 버전 관리(Git)</td></tr>
+    <tr><td>필요한 것</td><td>계정</td><td>유료 플랜 또는 API, 설치, 기본적인 터미널 사용</td></tr>
+  </table>
+
+  <h4>이 앱을 만든 과정</h4>
+  <ol>
+    <li><b>회사 조사·강의 계획</b> → <b>요구사항 문서(PRD)</b>: 무엇을 만들지, 우선순위, 화면, 데이터 구조. 이 문서도 대화로 만들었다.</li>
+    <li><b>1단계</b>: 서버 없이 브라우저에서 동작하는 웹페이지. 바코드 스캔, 입고·출고, 재고 현황, 이력, 부품 관리, 라벨 출력, CSV 내보내기.</li>
+    <li><b>테스트 먼저</b>: 기능마다 "이렇게 동작해야 한다"는 자동 테스트를 먼저 쓰고 기능을 만들었다. 현재 단위 테스트 335개, 화면 테스트 34개가 매번 자동으로 돈다.</li>
+    <li><b>코드 리뷰</b>: 다른 AI 에이전트가 검토해서 찾은 문제(여러 탭에서 기록이 지워지던 문제 등)를 고쳤다.</li>
+    <li><b>2단계</b>: 구글 시트 연동(여러 기기가 함께 씀), GitHub Pages 배포(https 주소, 스마트폰 카메라), 서류 사진으로 입고(OCR), 새 부품 품번 제안.</li>
+  </ol>
+  <p><b>사람이 한 일</b>: 원하는 것을 말하기, 결정하기(예: "스캔은 선택만, 저장은 [입력] 단추로"), 결과 확인하기, 계정·키 설정. 코드는 직접 쓰지 않았다.</p>
+
+  <h4>앱의 구조 (질문이 나오면)</h4>
+  <table>
+    <tr><th>부분</th><th>설명</th></tr>
+    <tr><td>현재고 계산</td><td>재고 숫자를 따로 저장하지 않고 <b>입출고 기록을 모두 더해서</b> 계산한다. 그래서 "왜 이 숫자인지" 언제든 기록으로 추적할 수 있다</td></tr>
+    <tr><td>잘못 입력했을 때</td><td>기록을 지우지 않고 "취소" 기록을 새로 남긴다. 누가 언제 무엇을 고쳤는지 남는다</td></tr>
+    <tr><td>저장 위치</td><td>각 기기의 브라우저에 먼저 저장하고, 연결되면 구글 시트로 보낸다. 인터넷이 끊겨도 입력할 수 있다</td></tr>
+    <tr><td>구글 시트 연동</td><td>구글의 Apps Script가 데이터 서버 역할. 연결 토큰이 맞아야만 읽고 쓴다</td></tr>
+    <tr><td>서류 사진으로 입고</td><td>앱 → Apps Script → Claude API. <b>AI 키는 Apps Script에만</b> 있고 브라우저에는 없다. 하루 사용 횟수 제한(기본 50회)으로 비용 사고를 막는다</td></tr>
+    <tr><td>배포</td><td>GitHub Pages(무료). 코드를 올리면 테스트를 통과해야만 자동으로 배포된다</td></tr>
+  </table>
+
+  <h4>비용 (대략)</h4>
   <ul>
-    <li>Claude Code는 내 PC의 파일을 직접 만들고, 실행하고, 테스트까지 한다. Claude.ai와의 차이.</li>
-    <li>만드는 순서: 요구사항(PRD) → 만들기 → 테스트 → 고치기. <b>세션 2·3·4에서 배운 것이 다 들어 있다.</b></li>
-    <li>한계: 유료 플랜과 설치가 필요하고, 결과 확인은 사람 몫. 그래서 오늘은 시연.</li>
+    <li>Claude Code: 유료 플랜(개인 Pro 이상) 또는 API 사용료.</li>
+    <li>서류 사진으로 입고: 서류 1장에 수십 원 수준으로 추정 (실제는 사용량 로그로 확인). 구글 시트·Apps Script·GitHub Pages는 이 규모에서 무료.</li>
   </ul>
 
-  <div class="session-head section-gap"><h2>세션 6. 마무리 + Q&amp;A</h2><span class="time">10분 · 90분안 15분</span></div>
-  <table class="sched">
-    <tr><th>분</th><th>내용</th><th>방식</th></tr>
-    <tr><td class="min">0–3</td><td>도입 로드맵: ① 개인 업무(Claude.ai+엑셀) → ② 팀 템플릿(프로젝트 공유) → ③ 공동 작업(구글 시트 장부) → ④ 사내 도구(Claude Code) → ⑤ ERP·MES 연계<br />엑셀은 혼자 분석·외부 반출 금지 자료, 구글 시트는 여럿이 동시 기록·현장 스마트폰 입력</td><td>강의</td></tr>
-    <tr><td class="min">3–5</td><td><b>내일 할 일:</b> 모음집 맨 아래 메모 칸에 "내일 Claude로 해 볼 업무 1개" 적기</td><td>실습</td></tr>
-    <tr><td class="min">5–6</td><td>지원사업 (아래 표), 자료 배포 안내</td><td>강의</td></tr>
-    <tr><td class="min">6–10</td><td>Q&amp;A</td><td>질의응답</td></tr>
-  </table>
-  <table>
-    <tr><th>지원사업 (10-05 확인)</th><th>2026년 일정</th><th>말할 것</th></tr>
-    <tr><td>스마트 제조혁신 통합 공고 (중기부)</td><td>2025-10-31 공고, 정부형 스마트공장 접수 2025-12-08 ~ 2026-01-07</td><td>2027년 공고도 10월 말~11월 가능성(추정). <b>지금이 준비할 때</b></td></tr>
-    <tr><td>AX 원스톱 바우처 (과기정통부·NIPA)</td><td>04-08 ~ 05-07, 추가 05-28 ~ 06-26</td><td>AI·클라우드·데이터 바우처, 공급기업과 함께 신청</td></tr>
-    <tr><td>상시</td><td></td><td>기업마당(bizinfo.go.kr) 키워드 알림 신청</td></tr>
-  </table>
+  <h3>시연 절차</h3>
+  <h4>3–9분 기능 둘러보기</h4>
+  <p>부품 관리에서 새 부품 등록(품명을 치면 품번이 제안됨) → 입고 스캔 → 출고 스캔(안전재고보다 적어지면 경고) → 재고 현황(부족 품목만 보기) → 이력(기간·품번 검색, 취소) → CSV 내보내기를 엑셀로 열기(한글 안 깨짐).</p>
+  <h4>9–16분 라이브 수정</h4>
+  <p>준비: <code>inventory-app</code>에서 <code>git status</code> 깨끗한지 확인, <code>npm run dev</code> → <code>localhost:5173</code>. 배포 사이트는 바뀌지 않는다. 요청 원문과 전환 명령은 부록 A-5.</p>
+  <ol>
+    <li>Claude Code가 관련 파일을 먼저 찾아 읽는다 ("기존 코드를 이해하고 시작한다").</li>
+    <li>테스트를 쓰고 → 기능을 만들고 → 테스트가 통과한다.</li>
+    <li>브라우저 새로고침 → 대시보드에 TOP 5 카드.</li>
+    <li>한마디 더: "수량 옆에 단위도 붙여줘" → 바로 반영.</li>
+  </ol>
+  <div class="note"><b>7분이 넘으면</b> 멈추고 완성본(<code>demo/top5</code>)으로 바꿔 결과만 보여준다. AI가 매번 똑같이 만들지는 않는다는 것도 자연스러운 설명거리다.</div>
+  <h4>16–20분 서류 사진으로 입고</h4>
+  <p>입고 → 📄 서류 사진으로 입고 → <code>sample-03</code> 인쇄본을 스마트폰으로 찍어 올림 → 10~40초 뒤 검수 표 → 포장 박스·완충 패드는 "정상", 포장 테이프는 "품번 미확인" → 새 부품으로 등록(품번 SK-SB-006 제안, 이유 표시) → [일괄 입력] → 재고 반영. 같은 서류를 다시 올리면 "이미 입고한 명세서" 경고가 나오는 것도 보여줄 수 있다.</p>
+  <h4>20–24분 구글 시트 공동 작업</h4>
+  <p>"자재팀은 입고, 생산팀은 출고하면?" → 스마트폰에서 출고 → 30초 안에(또는 PC 화면으로 돌아오면) PC 이력에 표시 → 구글 시트 <code>transactions</code> 탭에도 행이 추가된 것을 보여준다.</p>
+
+  <h3>자주 나오는 질문</h3>
+  <dl class="qa">
+    <dt>우리 회사도 이걸 바로 쓸 수 있나?</dt><dd>시연용이라 품번·화면이 가상이다. 실제로 쓰려면 회사 품번 체계, 사용자 권한, 백업, 기존 ERP와의 관계를 정해야 한다. 작은 범위(한 창고, 한 품목군)로 시험해 보는 것을 권한다.</dd>
+    <dt>데이터는 안전한가?</dt><dd>데이터는 회사 구글 계정의 시트에 있고, 연결 토큰이 있어야 읽고 쓸 수 있다. AI 키는 서버(Apps Script)에만 둔다. 운영하려면 토큰 관리와 시트 공유 범위를 정해야 한다.</dd>
+    <dt>프로그램을 고치려면 개발자가 필요한가?</dt><dd>작은 수정은 오늘처럼 말로 요청할 수 있다. 다만 결과 확인, 테스트 통과 확인, 배포 같은 관리는 담당자가 있어야 한다.</dd>
+    <dt>ERP·MES와 연결할 수 있나?</dt><dd>ERP가 데이터를 주고받는 방법(파일 내보내기, API)을 제공하면 가능하다. 도입 로드맵의 마지막 단계로 소개한다.</dd>
+  </dl>
 </section>
 
-<!-- 부록 A: 세션 1 프롬프트 -->
+<!-- ===================== 세션 6 ===================== -->
 <section class="page">
-  <h2>부록 A. 세션 1 프롬프트 (부서별)</h2>
-  <p class="small"><code>[ ]</code>만 바꿔 쓴다. 모음집 ①·④와 같은 계열.</p>
+  <div class="session-head"><h2>세션 6. 마무리: 도입 로드맵과 지원사업</h2><span class="time">10분 · 90분안 15분</span></div>
+  <p class="goal"><b>목표</b> 회사가 어떤 순서로 AI를 넓혀 가면 되는지 길을 보여주고, 참석자마다 내일 할 일 하나를 정한다.</p>
+  <table class="sched">
+    <tr><th>분</th><th>내용</th><th>방식</th></tr>
+    <tr><td class="min">0–3</td><td>도입 로드맵, 엑셀과 구글 시트 구분</td><td>강의</td></tr>
+    <tr><td class="min">3–5</td><td>내일 할 일: 프롬프트 모음집 메모 칸에 업무 1개 적기</td><td>실습</td></tr>
+    <tr><td class="min">5–6</td><td>지원사업, 자료 안내</td><td>강의</td></tr>
+    <tr><td class="min">6–10</td><td>Q&amp;A</td><td>질의응답</td></tr>
+  </table>
+
+  <h3>강의 내용</h3>
+  <h4>도입 로드맵 5단계</h4>
   <table>
-    <tr><th>부서</th><th>하고 싶은 일</th><th>프롬프트</th></tr>
+    <tr><th>단계</th><th>내용</th><th>예</th><th>필요한 것</th></tr>
+    <tr><td>① 개인 업무</td><td>각자 Claude.ai로 글·엑셀·서류 정리</td><td>오늘 실습한 모든 것</td><td>계정, 보안 수칙</td></tr>
+    <tr><td>② 팀 템플릿</td><td>잘 된 프롬프트와 자료를 팀이 함께 씀</td><td>부서별 프로젝트에 "명세서 읽는 규칙", "보고서 양식" 저장</td><td>팀 요금제, 프롬프트 정리 담당</td></tr>
+    <tr><td>③ 공동 작업</td><td>여러 사람이 함께 기록하는 장부를 구글 시트로</td><td>입출고, 설비 점검, 불량 기록</td><td>Google 계정, 시트 설계</td></tr>
+    <tr><td>④ 사내 도구</td><td>Claude Code로 우리 업무에 맞는 작은 프로그램</td><td>오늘의 입출고관리 앱</td><td>담당자 1명, 유료 플랜</td></tr>
+    <tr><td>⑤ 시스템 연계</td><td>ERP·MES와 데이터 연결</td><td>입고 기록을 ERP로 자동 전송</td><td>ERP 업체 협의, 지원사업 활용</td></tr>
+  </table>
+  <p>한 번에 ⑤로 가지 말고 ①·②에서 효과를 확인하며 넓혀 간다. ①은 내일 바로 시작할 수 있다.</p>
+
+  <h4>엑셀과 구글 시트, 언제 무엇을</h4>
+  <table>
+    <tr><th>엑셀</th><th>구글 시트</th></tr>
+    <tr><td>혼자 하는 분석·보고서<br />ERP·거래처 자료 가공<br />외부로 나가면 안 되는 자료</td><td>여러 사람이 동시에 기록하는 장부<br />현장에서 스마트폰으로 입력<br />자동화(Apps Script)와 연결</td></tr>
+  </table>
+
+  <h4>정부 지원사업 (2026-10-05 확인)</h4>
+  <p>2026년 접수는 대부분 끝났다. <b>내년 공고를 미리 준비하자</b>는 메시지로 안내한다.</p>
+  <table>
+    <tr><th>사업</th><th>2026년 일정</th><th>안내할 점</th></tr>
+    <tr><td>스마트 제조혁신 지원사업 통합 공고 (중소벤처기업부)</td><td>2025-10-31 공고. 정부형 스마트공장 접수 2025-12-08 ~ 2026-01-07</td><td>2027년 공고도 비슷한 시기(10월 말~11월)에 나올 가능성이 크다(추정). 강의 직후가 준비할 때</td></tr>
+    <tr><td>AX 원스톱 바우처 (과학기술정보통신부·정보통신산업진흥원)</td><td>2026-04-08 ~ 05-07, 추가 모집 05-28 ~ 06-26</td><td>AI·클라우드·데이터를 바우처로 통합 지원. 공급기업과 함께 신청</td></tr>
+    <tr><td>상시</td><td></td><td>기업마당(bizinfo.go.kr)에서 "스마트공장", "AI 바우처" 키워드 알림 신청</td></tr>
+  </table>
+  <p class="small">출처: 기업마당 2026년 스마트 제조혁신 지원사업 통합 공고, 2026년도 정부형 스마트공장 구축사업 공고, 2026년 AX 원스톱 바우처 수요기업 모집 공고, 과학기술정보통신부 AX 원스톱 바우처 추가 모집 공고</p>
+
+  <h4>내일 할 일 정하기</h4>
+  <p>프롬프트 모음집 맨 아래 "나만의 프롬프트 메모" 칸에 <b>내일 Claude로 해 볼 업무 1개</b>를 적게 한다. 예: 매주 쓰는 보고서 초안, 매달 정리하는 엑셀, 자주 쓰는 회신 메일. 2~3명에게 무엇을 적었는지 묻고 어떤 프롬프트로 시작하면 될지 짧게 조언한다.</p>
+
+  <h3>자주 나오는 질문</h3>
+  <dl class="qa">
+    <dt>무엇부터 시작하면 좋은가?</dt><dd>매주 반복하는 글쓰기·정리 업무 하나. 효과를 바로 느낄 수 있고 위험이 적다.</dd>
+    <dt>회사 차원에서 정할 것은?</dt><dd>쓸 도구와 요금제, 넣으면 안 되는 정보(보안 수칙), 잘 된 프롬프트를 모으는 방법(팀 템플릿).</dd>
+    <dt>오늘 자료를 받을 수 있나?</dt><dd>프롬프트 모음집과 실습 파일을 나눠 준다. 정답 파일과 이 교재는 배포하지 않는다.</dd>
+  </dl>
+</section>
+
+<!-- ===================== 부록 A ===================== -->
+<section class="page">
+  <h2>부록 A. 실습 프롬프트 원문</h2>
+  <h3>A-1. 세션 1 (부서별)</h3>
+  <table>
+    <tr><th>부서</th><th>하고 싶은 일</th><th>프롬프트 (<code>[ ]</code>만 바꾼다)</th></tr>
     <tr><td>공통</td><td>납기 지연 메일</td><td>자동차 부품 회사 영업 담당자야. 고객사에 [에어벤트 덕트 500개] 납기가 [원자재 입고 지연]으로 [3일] 늦어진다고 알리는 메일을 써줘. 사과, 원인, 새 납기, 재발 방지 순서로, 정중하지만 짧게.</td></tr>
     <tr><td>공통</td><td>회의 정리</td><td>아래 회의 메모를 결정 사항, 할 일(담당자·기한), 다음 회의 안건으로 나눠 표로 정리해줘. + 메모</td></tr>
     <tr><td>공통</td><td>공지문</td><td>총무 담당자야. [다음 주 수요일 오후 2시 소방 훈련] 공지문을 써줘. 일시, 장소, 준비물, 주의 사항을 넣고 A4 반 장 분량으로.</td></tr>
@@ -300,14 +678,10 @@
     <tr><td>영업</td><td>견적 회신</td><td>영업 담당자야. 신규 고객이 [페달 브래킷 월 2,000개] 견적을 요청했어. 견적서를 첨부한다는 메일 본문을 써줘. 유효 기간, 납기, 결제 조건을 넣고, 금액은 [ ]로 비워 둬.</td></tr>
     <tr><td>관리</td><td>주간 보고 양식</td><td>관리팀이 매주 받는 부서별 주간 보고 양식을 만들어줘. 지난주 실적, 이번 주 계획, 이슈, 지원 요청 칸을 두고 한 장에 들어가게.</td></tr>
   </table>
-  <p><b>다듬기 한마디</b> 더 짧게, 3문장으로 · 표로 바꿔줘 · 상사에게 보고하는 말투로 · 빠진 내용이 있으면 질문해줘</p>
-</section>
+  <p><b>다듬기 한마디</b> 더 짧게, 3문장으로 · 표로 바꿔줘 · 상사에게 보고하는 말투로 · 빠진 내용이 있으면 질문해줘 · 다른 방법 3가지 비교해줘</p>
 
-<!-- 부록 B: 세션 2·3·4 프롬프트와 정답 -->
-<section class="page">
-  <h2>부록 B. 세션 2·3·4 프롬프트와 정답</h2>
-
-  <h3>세션 2 실습 1: 목록 정리</h3>
+  <h3>A-2. 세션 2 (엑셀)</h3>
+  <h4>실습 1 목록 정리</h4>
 <pre>첨부한 엑셀의 '부품목록' 시트는 여러 사람이 입력해서 표기가 제각각이야. 아래 규칙으로 정리해서 엑셀 파일로 돌려줘.
 1. 품번은 SK-분류-세자리번호 형식 (예: SK-AD-005). 대문자, 공백 없이.
 2. 품번이 같은 행은 하나만 남겨.
@@ -317,36 +691,81 @@
 6. 안전재고는 숫자만. 뜻이 애매한 값은 지우지 말고 '확인 필요' 열을 만들어 이유를 적어.
 7. 등록일은 YYYY-MM-DD. 연도가 없으면 2026년.
 마지막에 무엇을 몇 건 고쳤는지 표로 알려줘.</pre>
-  <table>
-    <tr><th>숨겨 둔 문제</th><th>예시</th></tr>
-    <tr><td>품번 형식</td><td><code>sk-ad-001</code> <code>SK AD 003</code> <code>SKPD001</code> <code>SK_PD_003</code> <code>SK-AD-5</code> <code>SK-RM-03</code> 앞뒤 공백</td></tr>
-    <tr><td>중복 4건</td><td>SK-RM-001 두 번, <code>sk-pd-004</code>/SK-PD-004, SK-SB-001, SK-AD-002</td></tr>
-    <tr><td>자료 아닌 행</td><td>빈 행, "※ 9월 신규 등록분 아래"</td></tr>
-    <tr><td>단위·거래처</td><td><code>ea</code> <code>개</code> <code>박스</code> <code>포</code> <code>bag</code> / <code>(주)한빛폴리머</code> <code>한빛 폴리머</code> <code>주식회사 대한수지</code></td></tr>
-    <tr><td>안전재고·날짜</td><td><code>150개</code> <code>약 80</code> <code>1백20</code> <code>500 EA</code> <code>1,5</code> 빈 칸 / <code>2026.9.2</code> <code>9/3</code> <code>20260903</code></td></tr>
-  </table>
-
-  <h3>세션 2 실습 2: 함수</h3>
+  <h4>실습 2 함수</h4>
 <pre>엑셀 [2016]에서 쓸 수 있는 함수로 알려줘. '부품목록' 시트 A열 품번으로 '단가표' 시트(A열 품번, B열 단가)에서 단가를 찾아 I열에 넣는 수식. 단가가 없으면 '단가 없음'이라고 나오게.</pre>
-  <table>
-    <tr><th>버전</th><th>정답</th></tr>
-    <tr><td>2021·365</td><td><code>=XLOOKUP(A2,단가표!A:A,단가표!B:B,"단가 없음")</code></td></tr>
-    <tr><td>2016 이하</td><td><code>=IFERROR(INDEX(단가표!B:B,MATCH(A2,단가표!A:A,0)),"단가 없음")</code> 또는 <code>=IFERROR(VLOOKUP(A2,단가표!A:B,2,FALSE),"단가 없음")</code></td></tr>
-    <tr><td>9월 출고량</td><td><code>=SUMIFS(출고내역!C:C,출고내역!B:B,A2,출고내역!A:A,"&gt;="&amp;DATE(2026,9,1),출고내역!A:A,"&lt;="&amp;DATE(2026,9,30))</code></td></tr>
-  </table>
-  <p class="small">조건부 서식: J열이 0이면 행 전체를 연한 빨강 → 11개. 정답 파일 "월별 출고 집계" 시트에 7·8·9월과 검산(2,738 일치).</p>
-
-  <h3>세션 2 매크로 (강사 PC)</h3>
-<pre>엑셀 VBA 매크로를 만들어줘. 현재 시트를 보고서 서식으로 바꾸는 매크로야. 1행 머리글은 굵게, 연한 파랑 배경. 모든 열 너비 자동 맞춤. F열과 I열은 천 단위 쉼표. A4 가로로 한 페이지에 인쇄되게 설정. 처음 써 보는 사람을 위해 넣는 방법도 단계별로 알려줘.</pre>
+<pre>'출고내역' 시트에 출고일(A열), 품번(B열), 수량(C열)이 있어. '부품목록' J열에 품번별 2026년 9월 출고량 합계를 넣는 수식을 알려줘.</pre>
+<pre>J열이 0이면 그 행 전체를 연한 빨강으로 칠하는 조건부 서식 만드는 방법을 단계별로 알려줘.</pre>
+  <h4>매크로 (강사 PC)</h4>
+<pre>엑셀 VBA 매크로를 만들어줘. 현재 시트를 보고서 서식으로 바꾸는 매크로야.
+1행 머리글은 굵게, 연한 파랑 배경. 모든 열 너비 자동 맞춤. F열과 I열은 천 단위 쉼표.
+A4 가로로 한 페이지에 인쇄되게 설정. 처음 써 보는 사람을 위해 넣는 방법도 단계별로 알려줘.</pre>
 </section>
 
 <section class="page">
-  <h3>세션 3: 사진 → 표</h3>
+  <h3>A-3. 세션 3 (서류 사진)</h3>
 <pre>첨부한 거래명세서의 품목 표를 읽어서 표로 만들어줘.
 열: 귀사 품번, 공급사 코드, 품명, 규격, 단위, 수량
-단가와 금액은 빼줘. 표 위에 명세서 번호, 거래 일자, 공급자 상호를 따로 적어줘.
+단가와 금액은 빼줘.
+표 위에 명세서 번호, 거래 일자, 공급자 상호를 따로 적어줘.
 읽기 어려운 칸은 추측하지 말고 '확인 필요'라고 적어줘.</pre>
-  <p>이어서: <code>이 표를 엑셀에 바로 붙여넣을 수 있게 탭으로 구분한 형식으로 다시 보여줘.</code> → <code>표의 행 수와 수량 합계를 알려줘. 그리고 서류 아래쪽 합계 칸에 적힌 수량과 같은지 비교해줘.</code></p>
+<pre>이 표를 엑셀에 바로 붙여넣을 수 있게 탭으로 구분한 형식으로 다시 보여줘.</pre>
+<pre>표의 행 수와 수량 합계를 알려줘. 그리고 서류 아래쪽 합계 칸에 적힌 수량과 같은지 비교해줘.</pre>
+  <h4>응용 A (sample-02, 부품목록도 첨부)</h4>
+<pre>거래명세서의 품목 표를 1단계와 같은 열로 만들어줘. 귀사 품번이 빈 행은 함께 첨부한 부품목록에서 품명과 규격이 같은 부품의 품번으로 채우고, 그렇게 채운 칸은 '(추정)'이라고 붙여줘.</pre>
+  <h4>응용 B (sample-03, 부품목록도 첨부)</h4>
+<pre>거래명세서의 품목 중 첨부한 부품목록에 없는 품목을 찾아줘. 그 품목을 새로 등록한다면 품번 체계(SK-분류-세자리번호)에 맞게 어떤 품번이 좋을지 이유와 함께 제안해줘.</pre>
+
+  <h3>A-4. 세션 4 (라벨 생성기)</h3>
+<pre>품번 목록을 붙여넣으면 Code128 바코드 라벨을 A4에 인쇄할 수 있게 만들어 주는 웹페이지를 아티팩트로 만들어줘.
+- 왼쪽에 품번을 한 줄에 하나씩 넣는 입력칸
+- 라벨에는 바코드와 그 아래 품번 글자
+- A4 한 장에 3열로 배치, [인쇄] 단추
+예시 품번: SK-AD-001, SK-PD-003, SK-RM-002, SK-SB-004, SK-CS-001</pre>
+  <p>다듬기: <code>QR 코드도 같이 넣어줘</code> · <code>품명과 보관 위치도 표시해줘</code> · <code>A4 3×8 라벨지 크기에 맞춰줘</code></p>
+
+  <h3>A-5. 세션 5 (Claude Code 라이브 수정)</h3>
+<pre>대시보드에 "이번 달 출고 많은 부품 TOP 5" 카드를 추가해줘.
+품번, 품명, 이번 달 출고 수량을 보여주고, 누르면 그 부품의 이력으로 가게.
+테스트도 같이 만들고, 다 되면 빌드해서 확인할 수 있게 해줘.</pre>
+  <p>이어서: <code>수량 옆에 단위(EA, BOX 등)도 붙여줘</code></p>
+  <div class="box">
+    <h4>7분이 넘으면: 완성본으로 전환</h4>
+<pre><code>git stash -u            # 시연 중 만든 변경을 치워 둠
+git checkout demo/top5  # 완성본 (npm run dev가 켜져 있으면 화면이 바로 바뀜)</code></pre>
+    <p class="small">끝나면 <code>git checkout main</code>, 치워 둔 변경은 <code>git stash drop</code>. 인터넷이 끊기면 녹화 영상.</p>
+  </div>
+</section>
+
+<!-- ===================== 부록 B ===================== -->
+<section class="page">
+  <h2>부록 B. 정답과 체크포인트 모음</h2>
+  <h3>B-1. 세션 2 실습 1: 숨겨 둔 문제 10가지</h3>
+  <table>
+    <tr><th>구분</th><th>예시</th><th>고치는 방법</th></tr>
+    <tr><td>품번</td><td><code>sk-ad-001</code> <code>SK AD 003</code> <code>SKPD001</code> <code>SK_PD_003</code> <code>SK-AD-5</code> <code>SK-RM-03</code> 앞뒤 공백</td><td>SK-분류-세자리번호</td></tr>
+    <tr><td>중복</td><td>SK-RM-001 두 번, <code>sk-pd-004</code>/SK-PD-004, SK-SB-001, SK-AD-002</td><td>품번 통일 후 중복 제거 → 25개</td></tr>
+    <tr><td>빈 행·메모 행</td><td>빈 행, "※ 9월 신규 등록분 아래"</td><td>삭제</td></tr>
+    <tr><td>품명</td><td>에어벤트덕트 LH, 페달암 브래킷, ABS수지, 고무패킹, 포장박스(중), 앞 공백</td><td>마스터 표기로</td></tr>
+    <tr><td>단위</td><td>ea, Ea, 개 / 박스, Box / 포, bag</td><td>EA, BOX, BAG</td></tr>
+    <tr><td>거래처</td><td>(주)한빛폴리머, 한빛 폴리머, 한빛폴리머(주), 대한 수지, 주식회사 대한수지, 동방 부품</td><td>회사 이름만</td></tr>
+    <tr><td>안전재고</td><td>150개, 약 80, 1백20, 500 EA, 1,5, 빈 칸</td><td>숫자만, 애매하면 확인 필요</td></tr>
+    <tr><td>보관위치</td><td>a-2-2, B0201, S-2-2</td><td>A-02-02 형식</td></tr>
+    <tr><td>등록일</td><td>2026.9.2, 9/3, 20260903, 2026년 9월 4일, 9월 5일</td><td>YYYY-MM-DD</td></tr>
+    <tr><td>규격</td><td>PA 6, SUS 1000개입</td><td>PA6, SUS 1000ea/BOX</td></tr>
+  </table>
+  <p><b>체크</b> 부품 25개, 확인 필요 4건 (<code>1,5</code> SK-SB-003, <code>약 80</code> SK-AD-006, <code>1백20</code> SK-CS-002, 빈 칸 SK-PD-004)</p>
+
+  <h3>B-2. 세션 2 실습 2: 함수</h3>
+  <table>
+    <tr><th>문제</th><th>정답</th></tr>
+    <tr><td>단가 (2021·365)</td><td><code>=XLOOKUP(A2,단가표!A:A,단가표!B:B,"단가 없음")</code></td></tr>
+    <tr><td>단가 (2016 이하)</td><td><code>=IFERROR(INDEX(단가표!B:B,MATCH(A2,단가표!A:A,0)),"단가 없음")</code><br /><code>=IFERROR(VLOOKUP(A2,단가표!A:B,2,FALSE),"단가 없음")</code></td></tr>
+    <tr><td>9월 출고량</td><td><code>=SUMIFS(출고내역!C:C,출고내역!B:B,A2,출고내역!A:A,"&gt;="&amp;DATE(2026,9,1),출고내역!A:A,"&lt;="&amp;DATE(2026,9,30))</code></td></tr>
+    <tr><td>조건부 서식</td><td>범위 선택 → 조건부 서식 → 새 규칙 → 수식 사용 <code>=$J2=0</code> → 채우기 연한 빨강</td></tr>
+  </table>
+  <p><b>체크</b> 9월 출고 없는 부품 11개 (SK-AD-003, SK-AD-005, SK-AD-006, SK-PD-001, SK-CS-001, SK-CS-004, SK-CS-005, SK-RM-001, SK-RM-004, SK-SB-002, SK-SB-003). 7~9월 합계 2,738개 (정답 파일 "월별 출고 집계" 검산 "일치").</p>
+
+  <h3>B-3. 세션 3: 거래명세서 정답</h3>
   <table>
     <tr><th>서류</th><th>귀사 품번</th><th>공급사 코드</th><th>품명</th><th>규격</th><th>단위</th><th class="num">수량</th></tr>
     <tr><td rowspan="4"><b>sample-01</b><br />DS-2610-0012<br />2026-10-02<br />대한수지(가상)<br />합계 75</td><td>SK-RM-001</td><td>DH-PP-25</td><td>PP 수지</td><td>25kg/포</td><td>BAG</td><td class="num">40</td></tr>
@@ -362,27 +781,59 @@
     <tr><td>SK-SB-005</td><td>SJ-PD-EPE</td><td>완충 패드</td><td>EPE</td><td>EA</td><td class="num">800</td></tr>
     <tr><td><i>(없음 → 새 부품, SK-SB-006 제안)</i></td><td>SJ-TP-48</td><td>포장 테이프</td><td>48mm x 50m</td><td>EA</td><td class="num">60</td></tr>
   </table>
-  <p class="small">응용 A(sample-02): "귀사 품번이 빈 행은 첨부한 부품목록에서 품명과 규격이 같은 부품의 품번으로 채우고 '(추정)'을 붙여줘" · 응용 B(sample-03): "부품목록에 없는 품목을 찾고, 품번 체계에 맞는 새 품번을 이유와 함께 제안해줘"</p>
 
-  <h3>세션 4: 라벨 생성기</h3>
-<pre>품번 목록을 붙여넣으면 Code128 바코드 라벨을 A4에 인쇄할 수 있게 만들어 주는 웹페이지를 아티팩트로 만들어줘.
-- 왼쪽에 품번을 한 줄에 하나씩 넣는 입력칸
-- 라벨에는 바코드와 그 아래 품번 글자
-- A4 한 장에 3열로 배치, [인쇄] 단추
-예시 품번: SK-AD-001, SK-PD-003, SK-RM-002, SK-SB-004, SK-CS-001</pre>
+  <h3>B-4. 세션별 체크포인트</h3>
+  <table>
+    <tr><th>세션</th><th>확인할 것</th></tr>
+    <tr><td>1</td><td>모두 답을 하나 받았는가</td></tr>
+    <tr><td>2</td><td>25행, 확인 필요 4건, 단가 함수 동작, 9월 출고 없는 11개</td></tr>
+    <tr><td>3</td><td>sample-01 4행, 합계 75</td></tr>
+    <tr><td>4</td><td>라벨 5개, 품번 일치, 스캔 성공</td></tr>
+    <tr><td>5</td><td>TOP 5 카드 표시 (또는 완성본 전환), 서류 입고 후 재고 반영, 스마트폰 기록이 PC·시트에 반영</td></tr>
+    <tr><td>6</td><td>참석자마다 내일 할 일 1개</td></tr>
+  </table>
+</section>
 
-  <h2 class="section-gap">부록 C. 세션 5 라이브 수정 대본</h2>
-  <p><b>준비</b> <code>inventory-app</code>에서 <code>git status</code>가 깨끗한지 확인, <code>npm run dev</code> → <code>localhost:5173</code>. 배포 사이트는 바뀌지 않는다.</p>
-<pre>대시보드에 "이번 달 출고 많은 부품 TOP 5" 카드를 추가해줘.
-품번, 품명, 이번 달 출고 수량을 보여주고, 누르면 그 부품의 이력으로 가게.
-테스트도 같이 만들고, 다 되면 빌드해서 확인할 수 있게 해줘.</pre>
-  <p><b>보여줄 장면</b> ① 기존 코드를 먼저 읽는다 ② 테스트 → 기능 → 테스트 통과 ③ 새로고침하면 카드 ④ 한마디 더: <code>수량 옆에 단위(EA, BOX 등)도 붙여줘</code></p>
-  <div class="box">
-    <h3>7분이 넘으면: 완성본으로 전환</h3>
-<pre><code>git stash -u
-git checkout demo/top5</code></pre>
-    <p class="small">npm run dev가 켜져 있으면 화면이 바로 바뀐다. 끝나면 <code>git checkout main</code>, <code>git stash drop</code>. 인터넷이 끊기면 녹화 영상.</p>
-  </div>
+<!-- ===================== 부록 C, D ===================== -->
+<section class="page">
+  <h2>부록 C. 장애 대응</h2>
+  <table>
+    <tr><th>상황</th><th>대응</th></tr>
+    <tr><td>무료 계정 사용량 제한</td><td>옆 사람과 함께, 또는 강사 화면으로. 프롬프트는 모음집으로 나중에 다시</td></tr>
+    <tr><td>파일 첨부·아티팩트가 안 됨</td><td>그 실습은 강사 시연으로 바꾸고 참석자는 결과만 확인</td></tr>
+    <tr><td>파일로 돌려받지 못함</td><td>"표로 보여줘" → 복사해서 엑셀에 붙여넣기</td></tr>
+    <tr><td>결과가 강사와 다름</td><td>표현은 달라도 숫자(행 수·합계)가 같으면 정상</td></tr>
+    <tr><td>수식 오류</td><td>#N/A는 품번 공백·형식, #NAME?는 버전. 오류 메시지를 Claude에 붙여넣게 한다</td></tr>
+    <tr><td>사진을 못 읽음</td><td>서류 전체가 반듯하게, 그림자 없이 다시 찍기</td></tr>
+    <tr><td>스캐너 입력이 이상함</td><td>한/영 상태를 영문으로, 커서가 입력칸에 있는지</td></tr>
+    <tr><td>인터넷 불안정</td><td>녹화 영상. 앱은 <code>dist/index.html</code> 더블클릭으로도 동작 (구글 시트·OCR 제외)</td></tr>
+    <tr><td>라이브 수정이 7분 넘김</td><td>완성본으로 전환 (부록 A-5)</td></tr>
+    <tr><td>앱 OCR "AI 연결 키가 맞지 않습니다"</td><td>Apps Script 편집기에서 <code>checkClaudeKey</code> 실행 → 로그의 응답 코드와 할 일 확인. 급하면 녹화 영상</td></tr>
+    <tr><td>앱 OCR "오늘 서류 읽기 한도"</td><td>스크립트 속성 <code>OCR_DAILY_LIMIT</code>을 늘린다 (기본 50)</td></tr>
+    <tr><td>앱 상단 "동기화 오류"</td><td>표시를 눌러 설정 화면의 이유 확인. 시연에는 지장이 없으면 넘어간다</td></tr>
+    <tr><td>사내에서 Google 차단</td><td>구글 시트·OCR 부분은 녹화 영상</td></tr>
+  </table>
+
+  <h2 class="section-gap" style="margin-top:6mm">부록 D. 용어 풀이</h2>
+  <table>
+    <tr><th>용어</th><th>뜻</th></tr>
+    <tr><td>생성형 AI</td><td>글·그림 등을 새로 만들어 내는 AI. Claude, ChatGPT, Gemini</td></tr>
+    <tr><td>프롬프트</td><td>AI에게 주는 지시·질문 글</td></tr>
+    <tr><td>환각</td><td>AI가 사실이 아닌 내용을 그럴듯하게 만들어 내는 현상</td></tr>
+    <tr><td>아티팩트</td><td>Claude.ai가 대화 옆 창에 만드는 결과물(문서, 작은 웹페이지)</td></tr>
+    <tr><td>프로젝트</td><td>Claude.ai에서 지침과 자료를 묶어 여러 대화에 쓰는 기능</td></tr>
+    <tr><td>OCR</td><td>사진 속 글자를 텍스트로 바꾸는 기술</td></tr>
+    <tr><td>Code128 / QR</td><td>영숫자용 1차원 바코드 / 많은 정보를 담는 2차원 코드</td></tr>
+    <tr><td>VBA·매크로</td><td>엑셀 안에서 돌아가는 작은 프로그램</td></tr>
+    <tr><td>Claude Code</td><td>PC에서 파일을 만들고 실행·테스트까지 하는 AI 개발 도구</td></tr>
+    <tr><td>PRD</td><td>요구사항 문서. 무엇을, 왜, 어떤 우선순위로 만들지 적은 문서</td></tr>
+    <tr><td>테스트(자동 테스트)</td><td>프로그램이 정해진 대로 동작하는지 자동으로 확인하는 코드</td></tr>
+    <tr><td>Git·브랜치</td><td>코드의 변경 이력을 관리하는 도구 / 본선과 따로 작업하는 갈래</td></tr>
+    <tr><td>Apps Script</td><td>구글 시트 등에 붙여 쓰는 구글의 자동화 프로그램</td></tr>
+    <tr><td>API·API 키</td><td>프로그램끼리 기능을 주고받는 창구 / 그 창구를 쓰는 비밀 열쇠</td></tr>
+    <tr><td>GitHub Pages</td><td>코드를 올리면 웹사이트로 띄워 주는 무료 서비스</td></tr>
+    <tr><td>ERP·MES</td><td>전사 자원 관리 시스템 / 생산 현장 관리 시스템</td></tr>
+  </table>
 </section>
 
 </body>
