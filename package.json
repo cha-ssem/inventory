@@ -13,7 +13,8 @@
     "statements": "node scripts/statements/generate.mjs",
     "prompt-sheet": "node scripts/prompt-sheet/generate.mjs",
     "instructor-guide": "node scripts/instructor-guide/generate.mjs",
-    "handout": "node scripts/handout/generate.mjs"
+    "handout": "node scripts/handout/generate.mjs",
+    "infographic": "node scripts/infographic/generate.mjs"
   },
   "author": "",
   "license": "ISC",
