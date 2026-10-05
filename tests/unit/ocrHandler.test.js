@@ -135,3 +135,35 @@ describe('saveMappings 요청', () => {
     expect(gas.post({ action: 'ping', token: TOKEN }).revision).toBe(0)
   })
 })
+
+describe('checkClaudeKey (편집기에서 실행하는 키 점검)', () => {
+  it('키 모양과 API 응답을 로그에 남기고, 키 값은 남기지 않는다', () => {
+    const gas = setup({
+      properties: { CLAUDE_API_KEY: ' sk-ant-api03-secretvalue\n' },
+      fetchResponse: () => ({ status: 401, body: { type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } } }),
+    })
+    gas.context.checkClaudeKey()
+    const log = gas.logs.join('\n')
+    expect(log).toContain('앞뒤에 공백')
+    expect(log).toContain('401')
+    expect(log).toContain('authentication_error')
+    expect(log).not.toContain('secretvalue')
+    expect(gas.fetches[0].options.headers['x-api-key']).toBe('sk-ant-api03-secretvalue')
+  })
+
+  it('Admin 키와 빈 키를 알려 준다', () => {
+    const admin = setup({ properties: { CLAUDE_API_KEY: 'sk-ant-admin01-x' }, fetchResponse: okResponse })
+    admin.context.checkClaudeKey()
+    expect(admin.logs.join('\n')).toContain('Admin 키')
+    const empty = setup({ properties: { CLAUDE_API_KEY: '' } })
+    empty.context.checkClaudeKey()
+    expect(empty.logs.join('\n')).toContain('CLAUDE_API_KEY가 없습니다')
+    expect(empty.fetches).toHaveLength(0)
+  })
+
+  it('정상이면 성공을 알린다', () => {
+    const gas = setup()
+    gas.context.checkClaudeKey()
+    expect(gas.logs.join('\n')).toContain('정상')
+  })
+})

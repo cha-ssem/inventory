@@ -96,8 +96,13 @@ function logClaudeResult(result) {
   console.log('OCR 완료:', body.model, '입력 토큰', usage.input_tokens, '출력 토큰', usage.output_tokens, '종료', body.stop_reason)
 }
 
+// 복사할 때 함께 들어간 공백·줄바꿈은 빼고 쓴다
+function readApiKey(props) {
+  return String(props.getProperty('CLAUDE_API_KEY') || '').trim()
+}
+
 function handleOcr(req, props) {
-  var apiKey = props.getProperty('CLAUDE_API_KEY')
+  var apiKey = readApiKey(props)
   if (!apiKey) return fail('OCR_NOT_CONFIGURED', '서류 읽기가 아직 설정되지 않았습니다. 관리자에게 Apps Script에 CLAUDE_API_KEY를 넣어 달라고 하세요.')
   var file = validateOcrFile(req.file)
   if (!file.ok) return file
@@ -138,4 +143,39 @@ function handleSaveMappings(req) {
   })
   writeRows(sheet, MAPPING_COLUMNS, sheet.getLastRow() + 1, appends)
   return { ok: true, saved: plan.upserts.length, rejected: plan.rejected }
+}
+
+/**
+ * 문제 해결용: 편집기에서 실행하면 API 키 모양과 Claude API 응답을 실행 로그에 보여 준다. 키 값은 로그에 남기지 않는다.
+ * 아주 짧은 요청을 한 번 보내므로 사용료는 1원도 안 된다.
+ */
+function checkClaudeKey() {
+  var props = PropertiesService.getScriptProperties()
+  var raw = String(props.getProperty('CLAUDE_API_KEY') || '')
+  var key = raw.trim()
+  if (!key) {
+    console.log('스크립트 속성 CLAUDE_API_KEY가 없습니다. 속성 이름의 철자를 확인하세요.')
+    return
+  }
+  if (raw !== key) console.log('키 앞뒤에 공백이나 줄바꿈이 있습니다. 서버는 자동으로 빼고 쓰지만, 속성 값도 고쳐 두세요.')
+  if (key.indexOf('sk-ant-admin') === 0) console.log('Admin 키입니다. 서류 읽기에는 일반 API 키(sk-ant-api…)를 쓰세요.')
+  else if (key.indexOf('sk-ant-api') !== 0) console.log('키가 sk-ant-api로 시작하지 않습니다. 다른 값을 붙여넣었는지 확인하세요.')
+  console.log('키 길이: ' + key.length + '자')
+
+  var model = props.getProperty('CLAUDE_MODEL') || DEFAULT_CLAUDE_MODEL
+  var result = callClaude(key, { model: model, max_tokens: 16, messages: [{ role: 'user', content: '안녕' }] })
+  var error = result.body && result.body.error ? result.body.error : {}
+  if (result.status === 200) {
+    console.log('정상: ' + model + ' 모델에 연결됩니다.')
+    return
+  }
+  console.log('Claude API 응답 ' + result.status + ': ' + (error.type || '') + ' ' + (error.message || ''))
+  var hints = {
+    401: '키가 틀렸거나 폐기되었습니다. 콘솔에서 키가 살아 있는지 보고, 새로 만들어 다시 붙여넣으세요.',
+    403: '이 키(또는 워크스페이스)에 이 모델이나 기능을 쓸 권한이 없습니다. 워크스페이스 설정과 키 권한을 확인하세요.',
+    400: '결제 수단이나 크레딧이 없거나, CLAUDE_MODEL 값이 잘못되었을 수 있습니다. 위 메시지를 확인하세요.',
+    404: 'CLAUDE_MODEL 값이 잘못되었습니다. 지우면 기본 모델을 씁니다.',
+    429: '사용 한도에 걸렸습니다. 콘솔의 Limits를 확인하세요.',
+  }
+  if (hints[result.status]) console.log('할 일: ' + hints[result.status])
 }
