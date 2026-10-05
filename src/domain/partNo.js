@@ -92,3 +92,17 @@ export const suggestPartNo = ({ item, supplier, parts, transactions, siblingPart
   const [category, score] = ranked[0]
   return { partNo: nextPartNo(parts, category), category, reason: reasonFor(category, score, supplier), alternatives: alternativesAfter(category) }
 }
+
+// 부품 관리에서 분류를 직접 고를 수 있게, 분류마다 다음 번호를 준다 (기본 분류 + 마스터에만 있는 분류)
+export const categoryChoices = (parts) => {
+  const extra = [...new Set(parts.map((p) => categoryOf(p.partNo)).filter((c) => c && !CATEGORY_LABELS[c]))].sort()
+  return [...Object.keys(CATEGORY_LABELS), ...extra].map((category) => ({
+    category,
+    label: CATEGORY_LABELS[category] || category,
+    partNo: nextPartNo(parts, category),
+  }))
+}
+
+// 부품 관리: 명세서·공급사 정보 없이 품명만으로 제안한다
+export const suggestFromName = (name, parts) =>
+  (name || '').trim() ? suggestPartNo({ item: { name }, supplier: '', parts, transactions: [], siblingPartNos: [] }) : null

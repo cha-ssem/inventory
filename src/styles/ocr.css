@@ -146,7 +146,7 @@ tr.is-excluded td {
   border-radius: var(--radius);
 }
 
-/* 새 부품 등록 창의 제안 품번 */
+/* 새 부품 등록 창의 제안 품번 (서류로 입고, 부품 관리) */
 .part-suggestion {
   display: flex;
   flex-wrap: wrap;
@@ -160,6 +160,10 @@ tr.is-excluded td {
 
 .part-suggestion > span {
   flex: 1 1 100%;
+}
+
+.part-suggestion strong {
+  white-space: nowrap;
 }
 
 @media (max-width: 860px) {

@@ -203,3 +203,25 @@ test.describe('리뷰 반영 회귀 테스트', () => {
     await expect(page.getByTestId('scan-result')).toHaveAttribute('data-state', 'error')
   })
 })
+
+test.describe('부품 관리 품번 제안', () => {
+  test('품명을 입력하면 분류를 추측해 다음 품번을 채우고, 직접 고른 품번은 덮어쓰지 않는다', async ({ page }) => {
+    await loadSample(page)
+    await page.goto('/#/parts')
+    await page.getByRole('button', { name: '부품 등록' }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByTestId('part-suggestion')).toContainText('품명을 입력하면')
+
+    await dialog.getByLabel('품명 *').fill('센서 커버')
+    await expect(dialog.getByLabel('품번 *')).toHaveValue('SK-CS-006')
+    await expect(dialog.getByTestId('part-suggestion')).toContainText('"커버"')
+
+    await dialog.getByRole('button', { name: 'SK-PD-006 페달 부품' }).click()
+    await expect(dialog.getByLabel('품번 *')).toHaveValue('SK-PD-006')
+    await dialog.getByLabel('품명 *').fill('센서 커버 (페달용)')
+    await expect(dialog.getByLabel('품번 *')).toHaveValue('SK-PD-006')
+
+    await dialog.getByRole('button', { name: '등록' }).click()
+    await expect(page.getByTestId('parts-table')).toContainText('SK-PD-006')
+  })
+})

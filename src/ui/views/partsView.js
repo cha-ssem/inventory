@@ -126,7 +126,7 @@ export const renderParts = (container, { store, navigate }) => {
   }
 
   const actions = {
-    new: () => openPartForm({ store }),
+    new: () => openPartForm({ store, liveSuggest: true }),
     template: downloadTemplate,
     labels: () => {
       if (selected.size === 0) return toast('라벨을 출력할 부품을 먼저 선택하세요.', 'warning')

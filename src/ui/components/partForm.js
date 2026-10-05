@@ -1,6 +1,6 @@
-import { CATEGORY_LABELS } from '../../domain/partNo.js'
+import { CATEGORY_LABELS, categoryChoices, suggestFromName } from '../../domain/partNo.js'
 import { LIMITS } from '../../domain/validation.js'
-import { formValues, html, raw, showFieldErrors } from '../dom.js'
+import { formValues, html, raw, setHtml, showFieldErrors } from '../dom.js'
 import { notifyResult, openModal } from '../feedback.js'
 
 const field = ({ name, label, value = '', hint = '', required = false, attrs = '' }) => html`
@@ -18,9 +18,18 @@ const suggestionNote = (suggestion) => html`<div class="part-suggestion" data-te
   ${suggestion.alternatives.map((alt) => html`<button type="button" class="btn btn-sm" data-suggest="${alt.partNo}">${alt.partNo}${CATEGORY_LABELS[alt.category] ? ` (${CATEGORY_LABELS[alt.category]})` : ''}로 바꾸기</button>`)}
 </div>`
 
-const formContent = (part, initialPartNo, editing, suggestion) => html`
+// 부품 관리용: 품명을 입력할 때마다 바뀌는 제안과, 분류별 다음 번호 단추
+const liveNoteContent = (suggestion, choices) => html`
+  <span>${suggestion
+    ? html`💡 ${suggestion.reason} 제안 품번 <strong class="mono">${suggestion.partNo}</strong>`
+    : '💡 품명을 입력하면 품번을 제안합니다. 아래에서 분류를 직접 골라도 됩니다.'}</span>
+  <span class="muted">분류별 다음 번호</span>
+  ${choices.map((c) => html`<button type="button" class="btn btn-sm" data-suggest="${c.partNo}">${c.partNo} ${c.label}</button>`)}`
+
+const formContent = (part, initialPartNo, editing, suggestion, live) => html`
   <form class="part-form" novalidate>
     ${suggestion ? suggestionNote(suggestion) : ''}
+    ${live ? html`<div class="part-suggestion" data-testid="part-suggestion" data-live>${liveNoteContent(null, live.choices)}</div>` : ''}
     <div class="form-grid">
       ${editing
         ? html`<div class="field">
@@ -56,22 +65,42 @@ const formContent = (part, initialPartNo, editing, suggestion) => html`
   </form>
 `
 
+// 부품 관리: 품번을 직접 고치기 전까지는 품명에 맞춰 제안 품번을 채운다
+const attachLiveSuggestion = (dialog, form, parts, choices, state) => {
+  const note = dialog.querySelector('[data-live]')
+  form.elements.name.addEventListener('input', () => {
+    const suggestion = suggestFromName(form.elements.name.value, parts)
+    setHtml(note, liveNoteContent(suggestion, choices))
+    if (!state.partNoTouched) form.elements.partNo.value = suggestion?.partNo ?? ''
+  })
+  form.elements.partNo.addEventListener('input', () => {
+    state.partNoTouched = true
+  })
+}
+
 // part를 넘기면 수정, 없으면 새로 등록한다. initial: 새로 등록할 때 미리 채울 품명·규격·단위,
 // suggestion: 제안 품번(domain/partNo.js의 suggestPartNo 결과). 둘 다 서류로 입고에서 쓴다.
-export const openPartForm = ({ store, part = null, initialPartNo = '', initial = null, suggestion = null, onSaved, onClose }) => {
+// liveSuggest: 품명을 입력하면 품번을 제안한다 (부품 관리에서 씀)
+export const openPartForm = ({ store, part = null, initialPartNo = '', initial = null, suggestion = null, liveSuggest = false, onSaved, onClose }) => {
   const editing = Boolean(part)
+  const parts = store.getState().parts
+  const live = liveSuggest && !editing ? { choices: categoryChoices(parts) } : null
+  const state = { partNoTouched: false }
   openModal({
     title: editing ? `부품 수정 · ${part.partNo}` : '새 부품 등록',
-    content: formContent(part ?? initial, suggestion?.partNo ?? initialPartNo, editing, editing ? null : suggestion),
+    content: formContent(part ?? initial, suggestion?.partNo ?? initialPartNo, editing, editing ? null : suggestion, live),
     onClose,
     onMount: (dialog, close) => {
       const form = dialog.querySelector('form')
-      dialog.querySelectorAll('[data-suggest]').forEach((btn) =>
-        btn.addEventListener('click', () => {
-          form.elements.partNo.value = btn.dataset.suggest
-          form.elements.partNo.focus()
-        }),
-      )
+      // 제안 단추는 다시 그려지므로 창 전체에서 받는다. 고른 품번은 직접 고친 것으로 본다.
+      dialog.addEventListener('click', (event) => {
+        const btn = event.target.closest('[data-suggest]')
+        if (!btn) return
+        form.elements.partNo.value = btn.dataset.suggest
+        state.partNoTouched = true
+        form.elements.partNo.focus()
+      })
+      if (live) attachLiveSuggestion(dialog, form, parts, live.choices, state)
       dialog.querySelector('form [data-close]').addEventListener('click', close)
       form.addEventListener('submit', (event) => {
         event.preventDefault()

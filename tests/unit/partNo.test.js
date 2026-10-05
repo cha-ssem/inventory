@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CATEGORY_LABELS, nextPartNo, suggestPartNo } from '../../src/domain/partNo.js'
+import { CATEGORY_LABELS, categoryChoices, nextPartNo, suggestFromName, suggestPartNo } from '../../src/domain/partNo.js'
 
 const NOW = '2026-10-05T01:00:00.000Z'
 const part = (partNo, name) => ({ partNo, name, spec: '', unit: 'EA', safetyStock: 0, location: '', active: true, createdAt: NOW, updatedAt: NOW })
@@ -91,5 +91,25 @@ describe('suggestPartNo', () => {
 
   it('분류 이름을 알려 준다', () => {
     expect(CATEGORY_LABELS.SB).toBe('부자재')
+  })
+})
+
+describe('categoryChoices (부품 관리: 분류별 다음 번호)', () => {
+  it('기본 분류 다섯 개와 마스터에만 있는 분류의 다음 번호를 준다', () => {
+    const choices = categoryChoices([...parts, part('SK-EL-004', '전선')])
+    expect(choices.map((c) => c.partNo)).toEqual(['SK-AD-002', 'SK-PD-013', 'SK-CS-002', 'SK-RM-002', 'SK-SB-006', 'SK-EL-005'])
+    expect(choices[0].label).toBe('에어벤트 덕트')
+    expect(choices.at(-1).label).toBe('EL')
+  })
+})
+
+describe('suggestFromName (부품 관리: 품명만으로 제안)', () => {
+  it('품명 낱말로 분류를 골라 다음 번호를 준다', () => {
+    expect(suggestFromName('센서 커버', parts)).toMatchObject({ partNo: 'SK-CS-002', category: 'CS' })
+  })
+
+  it('단서가 없거나 품명이 비었으면 null', () => {
+    expect(suggestFromName('알 수 없는 것', parts)).toBeNull()
+    expect(suggestFromName('  ', parts)).toBeNull()
   })
 })
