@@ -29,8 +29,10 @@ src/
   domain/   순수 로직: 검증, 재고 계산, 입출고·취소 규칙, CSV, 백업, 날짜
   data/     브라우저 저장소, 상태 관리(store), 샘플 데이터
   ui/       화면: views/(화면별), components/(공용), dom.js(이스케이프 템플릿)
-  styles/   기본, 컴포넌트, 인쇄(라벨)
-tests/unit/ 단위 테스트 (Vitest)
+  sync/     구글 시트 동기화(엔진, 보낼 목록, 합치기), Apps Script 요청
+  styles/   기본, 컴포넌트, 인쇄(라벨), 서류로 입고(ocr)
+apps-script/ 구글 시트 서버: Code(요청 처리), Logic(순수 규칙), Ocr(Claude API 호출), OcrLogic(OCR 순수 규칙)
+tests/unit/ 단위 테스트 (Vitest). tests/support/: 가짜 Apps Script·Google 서비스
 e2e/        E2E 테스트 (Playwright)
 ```
 

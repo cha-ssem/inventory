@@ -232,6 +232,13 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     return createClient(checked.value).request('ping')
   }
 
+  // 동기화 외의 요청(서류 읽기 등)을 연결된 Apps Script로 보낸다
+  const callServer = async (action, payload = {}, options = {}) => {
+    const current = config()
+    if (!current) return { ok: false, code: 'NOT_CONNECTED', error: '구글 시트에 먼저 연결하세요. (설정 → 구글 시트 연결)' }
+    return createClient(current).request(action, payload, options)
+  }
+
   const disconnect = () => {
     generation += 1
     writeJson(kv, SYNC_KEYS.config, null)
@@ -293,6 +300,7 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     recordLocalChange,
     syncNow,
     testConnection,
+    callServer,
     connect,
     disconnect,
     resolveConflict,

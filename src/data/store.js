@@ -117,6 +117,22 @@ export const createStore = ({ storage, now = () => new Date().toISOString(), mak
     return appendTransaction(result.value, { after, low: after < check.part.safetyStock })
   }
 
+  // 서류로 입고: 모두 올바를 때만 한 번에 저장한다 (일부만 들어가서 명세서와 어긋나지 않도록)
+  const recordInboundBatch = (inputs) => {
+    syncFromStorage()
+    if (!Array.isArray(inputs) || inputs.length === 0) return fail('입고할 품목이 없습니다.')
+    const checked = inputs.map((input, index) => {
+      const part = requireActivePart(input.partNo)
+      if (!part.ok) return { index, error: part.error }
+      const result = createTransaction({ ...input, type: TX_TYPES.IN }, { now: now(), makeId })
+      return result.ok ? { index, tx: result.value } : { index, error: result.error }
+    })
+    const errors = checked.filter((c) => c.error).map(({ index, error }) => ({ index, error }))
+    if (errors.length > 0) return fail(errors[0].error, { errors })
+    const txs = checked.map((c) => c.tx)
+    return commit({ ...state, transactions: [...state.transactions, ...txs] }, { ok: true, value: txs }, { transactions: txs })
+  }
+
   const recordOutbound = (input) => {
     syncFromStorage()
     const check = requireActivePart(input.partNo)
@@ -163,6 +179,7 @@ export const createStore = ({ storage, now = () => new Date().toISOString(), mak
     setPartActive: changePartActive,
     importParts,
     recordInbound,
+    recordInboundBatch,
     recordOutbound,
     cancelTransaction,
     loadSample,

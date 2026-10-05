@@ -7,6 +7,7 @@ import { renderSyncBadge } from './ui/components/syncBadge.js'
 import { renderDashboard } from './ui/views/dashboard.js'
 import { renderHistory } from './ui/views/historyView.js'
 import { renderLabels } from './ui/views/labelsView.js'
+import { renderOcrInbound } from './ui/views/ocrView.js'
 import { renderParts } from './ui/views/partsView.js'
 import { createScanView } from './ui/views/scanView.js'
 import { renderSettings } from './ui/views/settingsView.js'
@@ -15,6 +16,7 @@ import { renderStock } from './ui/views/stockView.js'
 const routes = {
   '/': renderDashboard,
   '/inbound': createScanView('IN'),
+  '/inbound-ocr': renderOcrInbound,
   '/outbound': createScanView('OUT'),
   '/stock': renderStock,
   '/history': renderHistory,
@@ -23,7 +25,7 @@ const routes = {
   '/settings': renderSettings,
 }
 
-const NAV_PARENT = { '/labels': '/parts' }
+const NAV_PARENT = { '/labels': '/parts', '/inbound-ocr': '/inbound' }
 
 const parseHash = () => {
   const [path, search = ''] = (window.location.hash.slice(1) || '/').split('?')

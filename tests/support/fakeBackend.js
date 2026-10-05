@@ -9,14 +9,15 @@ export const FAKE_TOKEN = 'e2etoken0123456789'
 const loadLogic = () => {
   const here = dirname(fileURLToPath(import.meta.url))
   const gs = vm.createContext({})
-  vm.runInContext(readFileSync(resolve(here, '../../apps-script/Logic.gs'), 'utf-8'), gs)
+  for (const file of ['Logic.gs', 'OcrLogic.gs']) vm.runInContext(readFileSync(resolve(here, '../../apps-script', file), 'utf-8'), gs)
   return gs
 }
 
 // Code.gs와 같은 규칙으로 동작하는 메모리 서버 (시트 대신 배열). 실제 판단은 Logic.gs 함수를 쓴다.
 export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
   const gs = loadLogic()
-  const db = { parts: [], transactions: [], version: 'v1', revision: 0, online: true, hooks: {}, requests: [] }
+  // ocrResult: ocr 요청에 돌려줄 AI 결과(명세서) 또는 { ok: false, ... } 오류. mappings: 대응표 시트
+  const db = { parts: [], transactions: [], version: 'v1', revision: 0, online: true, hooks: {}, requests: [], ocrResult: null, ocrFiles: [], mappings: [] }
   const lastRowId = () => db.transactions.at(-1)?.id ?? null
 
   const handlers = {
@@ -43,6 +44,21 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
         ok: true, dataVersion: db.version, revision: db.revision, previousRevision,
         acceptedIds: plan.acceptedIds, duplicateIds: plan.duplicateIds, rejected: plan.rejected, rejectedParts: plan.rejectedParts, txTotal: db.transactions.length,
       }
+    },
+    ocr: (req) => {
+      const file = gs.validateOcrFile(req.file)
+      if (!file.ok) return file
+      db.ocrFiles.push(file.value.mediaType)
+      if (!db.ocrResult) return { ok: false, code: 'OCR_NOT_CONFIGURED', error: '서류 읽기가 아직 설정되지 않았습니다.' }
+      if (db.ocrResult.ok === false) return db.ocrResult
+      return { ok: true, statement: gs.sanitizeStatement(db.ocrResult), mappings: db.mappings }
+    },
+    saveMappings: (req) => {
+      const plan = gs.planMappingUpserts(db.mappings, req.mappings, new Date().toISOString())
+      plan.upserts.forEach((u) => {
+        db.mappings = u.rowIndex === null ? [...db.mappings, u.mapping] : db.mappings.map((m, i) => (i === u.rowIndex ? u.mapping : m))
+      })
+      return { ok: true, saved: plan.upserts.length, rejected: plan.rejected }
     },
     replaceAll: (req) => {
       const allowed = gs.checkReplaceAllowed(req, db.revision)

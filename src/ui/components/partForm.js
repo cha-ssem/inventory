@@ -48,12 +48,13 @@ const formContent = (part, initialPartNo, editing) => html`
   </form>
 `
 
-// part를 넘기면 수정, 없으면 새로 등록한다
-export const openPartForm = ({ store, part = null, initialPartNo = '', onSaved }) => {
+// part를 넘기면 수정, 없으면 새로 등록한다. initial: 새로 등록할 때 미리 채울 품명·규격·단위 (서류로 입고에서 씀)
+export const openPartForm = ({ store, part = null, initialPartNo = '', initial = null, onSaved, onClose }) => {
   const editing = Boolean(part)
   openModal({
     title: editing ? `부품 수정 · ${part.partNo}` : '새 부품 등록',
-    content: formContent(part, initialPartNo, editing),
+    content: formContent(part ?? initial, initialPartNo, editing),
+    onClose,
     onMount: (dialog, close) => {
       const form = dialog.querySelector('form')
       dialog.querySelector('form [data-close]').addEventListener('click', close)

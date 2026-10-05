@@ -9,7 +9,7 @@ import { openPartForm } from '../components/partForm.js'
 import { errorCard, idleCard, selectedCard, successCard, unknownCard } from './scanCards.js'
 
 const CONFIG = {
-  IN: { label: '입고', sign: '+', partnerLabel: '거래처', partnerHint: '예: 대한수지', record: 'recordInbound', boxClass: '' },
+  IN: { label: '입고', sign: '+', partnerLabel: '거래처', partnerHint: '예: 대한수지', record: 'recordInbound', boxClass: '', ocr: true },
   OUT: { label: '출고', sign: '-', partnerLabel: '사용처', partnerHint: '예: 사출 1라인', record: 'recordOutbound', boxClass: 'is-out' },
 }
 
@@ -19,7 +19,10 @@ const recentPartners = (transactions, type) =>
   [...new Set([...transactions].reverse().filter((t) => t.type === type && t.partner).map((t) => t.partner))].slice(0, 20)
 
 const layout = (cfg, partners) => html`
-  <div class="page-head"><h1>${cfg.label}</h1></div>
+  <div class="page-head">
+    <h1>${cfg.label}</h1>
+    ${cfg.ocr ? html`<div class="actions"><a class="btn" href="#/inbound-ocr">📄 서류 사진으로 입고</a></div>` : ''}
+  </div>
   <div class="scan-layout">
     <section class="panel scan-box ${cfg.boxClass}">
       <form class="scan-form" data-testid="scan-form" autocomplete="off">

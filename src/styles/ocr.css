@@ -1,0 +1,173 @@
+/* 서류 사진으로 입고 (OCR) */
+.ocr-upload p {
+  margin: 0 0 1rem;
+}
+
+.ocr-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  padding: 0.8rem 1.2rem;
+  cursor: pointer;
+}
+
+.ocr-pick:focus-within {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.ocr-upload .hint {
+  display: block;
+  margin-top: 0.75rem;
+}
+
+.ocr-reading {
+  text-align: center;
+  padding: 2.5rem 1rem;
+}
+
+.spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0 auto 1rem;
+  border: 4px solid var(--primary-soft);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: ocr-spin 0.9s linear infinite;
+}
+
+@keyframes ocr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 3s;
+  }
+}
+
+.ocr-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
+  gap: 1.25rem;
+  align-items: start;
+  margin-bottom: 1.25rem;
+}
+
+.ocr-layout > .panel {
+  margin-top: 0;
+}
+
+.ocr-header {
+  margin-bottom: 1rem;
+}
+
+.ocr-header + .result-card {
+  margin-bottom: 1rem;
+}
+
+.ocr-table td {
+  vertical-align: top;
+  white-space: normal;
+}
+
+.ocr-table select.input {
+  min-width: 12rem;
+  max-width: 18rem;
+}
+
+.ocr-table .hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.ocr-table .hint.is-check {
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.ocr-table .badge {
+  white-space: nowrap;
+}
+
+.ocr-qty {
+  width: 6.5rem;
+}
+
+.ocr-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 10rem;
+}
+
+.ocr-doc .mono {
+  font-size: 0.8rem;
+}
+
+tr.is-excluded td {
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+
+.badge-warn {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.ocr-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.ocr-footer p {
+  margin: 0;
+}
+
+.ocr-original summary {
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+}
+
+.ocr-preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+@media (max-width: 860px) {
+  /* 1fr은 표 너비만큼 늘어나 화면이 옆으로 밀리므로, 표가 자기 칸 안에서 스크롤되게 한다 */
+  .ocr-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 휴대폰에서는 원본을 위에 접어 두고, [일괄 입력]을 화면 아래에 고정한다 */
+  .ocr-original {
+    order: -1;
+  }
+
+  .ocr-preview {
+    max-height: 45vh;
+    object-fit: contain;
+  }
+
+  .ocr-footer {
+    position: sticky;
+    bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 5;
+    padding: 0.75rem 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+}
