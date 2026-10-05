@@ -60,11 +60,12 @@ test.describe('서류 사진으로 입고', () => {
     await expect(rowOf(page, '포장 테이프').getByTestId('ocr-status')).toHaveText('품번 미확인')
     await expect(page.getByTestId('ocr-summary')).toContainText('넣을 품목 2개 · 확인 필요 1개')
 
-    // 마스터에 없는 품목은 새 부품으로 등록한다 (품명·규격이 미리 채워짐)
+    // 마스터에 없는 품목은 새 부품으로 등록한다. 품명·규격이 채워지고, 같은 명세서의 다른 품목(SB)을 보고 품번을 제안한다.
     await rowOf(page, '포장 테이프').getByRole('combobox').selectOption('__new__')
     const dialog = page.getByRole('dialog')
     await expect(dialog.getByLabel('품명 *')).toHaveValue('포장 테이프')
-    await dialog.getByLabel('품번 *').fill('SK-SB-006')
+    await expect(dialog.getByLabel('품번 *')).toHaveValue('SK-SB-006')
+    await expect(dialog.getByTestId('part-suggestion')).toContainText('같은 명세서의 다른 품목이 SB(부자재) 분류입니다')
     await dialog.getByRole('button', { name: '등록' }).click()
     await expect(rowOf(page, '포장 테이프').getByTestId('ocr-status')).toHaveText('정상')
 

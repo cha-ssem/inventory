@@ -146,6 +146,22 @@ tr.is-excluded td {
   border-radius: var(--radius);
 }
 
+/* 새 부품 등록 창의 제안 품번 */
+.part-suggestion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+}
+
+.part-suggestion > span {
+  flex: 1 1 100%;
+}
+
 @media (max-width: 860px) {
   /* 1fr은 표 너비만큼 늘어나 화면이 옆으로 밀리므로, 표가 자기 칸 안에서 스크롤되게 한다 */
   .ocr-layout {

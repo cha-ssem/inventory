@@ -1,3 +1,4 @@
+import { CATEGORY_LABELS } from '../../domain/partNo.js'
 import { LIMITS } from '../../domain/validation.js'
 import { formValues, html, raw, showFieldErrors } from '../dom.js'
 import { notifyResult, openModal } from '../feedback.js'
@@ -11,8 +12,15 @@ const field = ({ name, label, value = '', hint = '', required = false, attrs = '
   </div>
 `
 
-const formContent = (part, initialPartNo, editing) => html`
+// 제안 품번의 이유와, 다른 분류로 바꾸는 단추
+const suggestionNote = (suggestion) => html`<div class="part-suggestion" data-testid="part-suggestion">
+  <span>💡 제안 품번 <strong class="mono">${suggestion.partNo}</strong>: ${suggestion.reason}</span>
+  ${suggestion.alternatives.map((alt) => html`<button type="button" class="btn btn-sm" data-suggest="${alt.partNo}">${alt.partNo}${CATEGORY_LABELS[alt.category] ? ` (${CATEGORY_LABELS[alt.category]})` : ''}로 바꾸기</button>`)}
+</div>`
+
+const formContent = (part, initialPartNo, editing, suggestion) => html`
   <form class="part-form" novalidate>
+    ${suggestion ? suggestionNote(suggestion) : ''}
     <div class="form-grid">
       ${editing
         ? html`<div class="field">
@@ -48,15 +56,22 @@ const formContent = (part, initialPartNo, editing) => html`
   </form>
 `
 
-// part를 넘기면 수정, 없으면 새로 등록한다. initial: 새로 등록할 때 미리 채울 품명·규격·단위 (서류로 입고에서 씀)
-export const openPartForm = ({ store, part = null, initialPartNo = '', initial = null, onSaved, onClose }) => {
+// part를 넘기면 수정, 없으면 새로 등록한다. initial: 새로 등록할 때 미리 채울 품명·규격·단위,
+// suggestion: 제안 품번(domain/partNo.js의 suggestPartNo 결과). 둘 다 서류로 입고에서 쓴다.
+export const openPartForm = ({ store, part = null, initialPartNo = '', initial = null, suggestion = null, onSaved, onClose }) => {
   const editing = Boolean(part)
   openModal({
     title: editing ? `부품 수정 · ${part.partNo}` : '새 부품 등록',
-    content: formContent(part ?? initial, initialPartNo, editing),
+    content: formContent(part ?? initial, suggestion?.partNo ?? initialPartNo, editing, editing ? null : suggestion),
     onClose,
     onMount: (dialog, close) => {
       const form = dialog.querySelector('form')
+      dialog.querySelectorAll('[data-suggest]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          form.elements.partNo.value = btn.dataset.suggest
+          form.elements.partNo.focus()
+        }),
+      )
       dialog.querySelector('form [data-close]').addEventListener('click', close)
       form.addEventListener('submit', (event) => {
         event.preventDefault()

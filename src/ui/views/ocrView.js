@@ -8,6 +8,7 @@ import {
   toInboundInputs,
   updateRow,
 } from '../../domain/ocr.js'
+import { suggestPartNo } from '../../domain/partNo.js'
 import { setHtml } from '../dom.js'
 import { confirmDialog, notifyResult, toast } from '../feedback.js'
 import { prepareOcrFile } from '../components/ocrFile.js'
@@ -119,11 +120,18 @@ export const renderOcrInbound = (container, { store, sync }) => {
 
   const setRow = (key, changes) => setState({ rows: updateRow(state.rows, key, changes) })
 
+  const suggestionFor = (key, item) => {
+    const { parts, transactions } = store.getState()
+    const siblingPartNos = state.rows.filter((r) => r.key !== key && r.partNo).map((r) => r.partNo)
+    return suggestPartNo({ item, supplier: state.header.supplier || state.statement.supplier, parts, transactions, siblingPartNos })
+  }
+
   const registerForRow = (key) => {
     const { item } = state.rows.find((r) => r.key === key)
     openPartForm({
       store,
       initialPartNo: item.ourPartNo,
+      suggestion: suggestionFor(key, item),
       initial: { name: item.name, spec: item.spec, unit: item.unit || 'EA' },
       onSaved: (part) => setRow(key, { partNo: part.partNo }),
       onClose: draw,
