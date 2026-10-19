@@ -1,7 +1,8 @@
+import { AI_DRAFT_TIMEOUT_MS, buildAiInput } from '../../domain/report/aiInput.js'
 import { REPORT_LIMITS, REPORT_SECTIONS, defaultBody } from '../../domain/report/report.js'
 import { collectReport } from '../../domain/report/collect.js'
 import { formValues, html, qs, setHtml } from '../dom.js'
-import { confirmDialog, notifyResult } from '../feedback.js'
+import { confirmDialog, notifyResult, toast } from '../feedback.js'
 import { reportSheet, reportStatusBadge } from '../components/reportSheet.js'
 import { rememberedInspector, sectionBanner } from '../inspectionFormat.js'
 
@@ -10,6 +11,7 @@ const SECTION_ROWS = { summary: 3, findings: 5, actions: 4, nextPlan: 4 }
 const ACTIONS = {
   DRAFT: [
     ['save', '저장', 'btn'],
+    ['ai', 'AI 초안 쓰기', 'btn'],
     ['recollect', '데이터 다시 모으기', 'btn'],
     ['delete', '삭제', 'btn btn-danger'],
     ['finalize', '확정', 'btn btn-primary'],
@@ -48,7 +50,10 @@ const layout = (report) => html`<div class="no-print">${sectionBanner()}</div>
     <div class="report-preview">${reportSheet(report)}</div>
   </div>`
 
-export const renderReportEditor = (container, { reports, inspection, query, navigate }) => {
+const NOT_CONNECTED = 'AI 초안은 구글 시트(Apps Script)에 연결해야 쓸 수 있습니다. 설정 → 구글 시트 연결에서 연결하세요.'
+const AI_CONFIRM = '점검 기록(현장·점검 내용·조치·남은 요청)을 AI에 보내 네 문단을 새로 씁니다. 지금 문장은 AI 초안으로 바뀌고, 확정 전에 고칠 수 있습니다.\n하루 사용 횟수가 정해져 있습니다.'
+
+export const renderReportEditor = (container, { reports, inspection, sync, query, navigate }) => {
   const reportId = query.get('id') || ''
   let dirty = false
 
@@ -87,8 +92,28 @@ export const renderReportEditor = (container, { reports, inspection, query, navi
     notifyResult(reports.update(reportId, defaultBody(snapshot), { snapshot }), '점검 기록을 다시 모았습니다.')
   }
 
+  // 6단계: Apps Script를 거쳐 Claude가 네 문단을 쓴다 (API 키는 서버에만 있음)
+  const aiDraft = async (button) => {
+    if (!sync?.getStatus().connected) return toast(NOT_CONNECTED, 'error')
+    if (!(await confirmDialog({ title: 'AI 초안 쓰기', message: AI_CONFIRM, confirmLabel: 'AI 초안 쓰기' }))) return
+    const report = reports.get(reportId)
+    button.disabled = true
+    button.textContent = 'AI가 쓰는 중…'
+    let result
+    try {
+      result = await sync.callServer('reportDraft', { report: buildAiInput(report) }, { timeoutMs: AI_DRAFT_TIMEOUT_MS })
+    } finally {
+      button.disabled = false
+      button.textContent = 'AI 초안 쓰기'
+    }
+    if (!result.ok) return toast(result.error || 'AI 초안을 만들지 못했습니다.', 'error')
+    dirty = false
+    notifyResult(reports.update(reportId, result.body, { aiUsed: true }), 'AI 초안을 넣었습니다. 내용을 확인하고 고친 뒤 확정하세요.')
+  }
+
   const actions = {
     save: () => notifyResult(save(), '보고서를 저장했습니다.'),
+    ai: aiDraft,
     recollect,
     delete: async () => {
       if (!(await confirmDialog({ title: '보고서 삭제', message: '이 초안을 지울까요?', confirmLabel: '지우기', danger: true }))) return
@@ -111,8 +136,8 @@ export const renderReportEditor = (container, { reports, inspection, query, navi
   }
 
   container.addEventListener('click', (event) => {
-    const action = event.target.closest('[data-report-action]')?.dataset.reportAction
-    if (action) actions[action]()
+    const button = event.target.closest('[data-report-action]')
+    if (button) actions[button.dataset.reportAction](button)
   })
   container.addEventListener('input', (event) => {
     if (event.target.closest('.report-form')) preview()

@@ -1,6 +1,6 @@
 /**
  * 부품 입출고관리 - 구글 시트 연동 서버 (2단계)
- * 설치: 구글 시트 → 확장 프로그램 → Apps Script에 이 폴더의 파일(Code, Logic, Ocr, OcrLogic, Inspection, InspectionLogic)을 붙여넣고 setup()을 한 번 실행한 뒤 웹 앱으로 배포한다.
+ * 설치: 구글 시트 → 확장 프로그램 → Apps Script에 이 폴더의 파일(Code, Logic, Ocr, OcrLogic, Inspection, InspectionLogic, Report, ReportLogic)을 붙여넣고 setup()을 한 번 실행한 뒤 웹 앱으로 배포한다.
  * 모든 요청은 POST(본문 JSON)이며, 연결 토큰(스크립트 속성 APP_TOKEN)이 맞아야 처리한다.
  */
 
@@ -36,12 +36,13 @@ function handleRequest(body) {
   var handlers = {
     ping: handlePing, pull: handlePull, push: handlePush, replaceAll: handleReplaceAll,
     ocr: handleOcr, saveMappings: handleSaveMappings, inspPush: handleInspPush, inspPull: handleInspPull,
+    reportDraft: handleReportDraft,
   }
   var action = request.value.action
   var handler = handlers[action]
   if (!handler) return fail('UNKNOWN_ACTION', '알 수 없는 요청입니다. Apps Script를 최신 버전으로 다시 배포하세요.')
 
-  // 쓰기만 한 번에 하나씩 처리한다. 읽기와 서류 읽기(ocr, 오래 걸림)는 잠금 없이 처리해서 다른 기기가 기다리지 않는다.
+  // 쓰기만 한 번에 하나씩 처리한다. 읽기와 AI 요청(ocr·reportDraft, 오래 걸림)은 잠금 없이 처리해서 다른 기기가 기다리지 않는다.
   var lock = WRITE_ACTIONS[action] ? LockService.getScriptLock() : null
   if (lock && !lock.tryLock(LOCK_WAIT_MS)) return fail('BUSY', '다른 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.')
   try {

@@ -9,7 +9,7 @@ export const FAKE_TOKEN = 'e2etoken0123456789'
 const loadLogic = () => {
   const here = dirname(fileURLToPath(import.meta.url))
   const gs = vm.createContext({})
-  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs']) vm.runInContext(readFileSync(resolve(here, '../../apps-script', file), 'utf-8'), gs)
+  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs', 'ReportLogic.gs']) vm.runInContext(readFileSync(resolve(here, '../../apps-script', file), 'utf-8'), gs)
   return gs
 }
 
@@ -19,7 +19,9 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
   // ocrResult: ocr 요청에 돌려줄 AI 결과(명세서) 또는 { ok: false, ... } 오류. mappings: 대응표 시트
   const db = { parts: [], transactions: [], version: 'v1', revision: 0, online: true, hooks: {}, requests: [], ocrResult: null, ocrFiles: [], mappings: [],
     // 현장점검 시트. inspectionSupported=false면 점검 기능이 없던 예전 배포처럼 응답한다
-    sites: [], robots: [], events: [], inspectionSupported: true }
+    sites: [], robots: [], events: [], inspectionSupported: true,
+    // reportResult: reportDraft 요청에 돌려줄 AI 문단 또는 { ok: false, ... } 오류. reportInputs: 받은 보고서 데이터
+    reportResult: null, reportInputs: [] }
   const lastRowId = () => db.transactions.at(-1)?.id ?? null
 
   const handlers = {
@@ -79,6 +81,14 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
         ok: true, full, sites: db.sites, robots: db.robots, events: valid.events, invalidCount: valid.invalidCount,
         total: db.events.length, lastRowId: db.events.at(-1)?.id ?? null,
       }
+    },
+    reportDraft: (req) => {
+      const input = gs.sanitizeReportInput(req.report)
+      if (!input.ok) return input
+      if (!db.reportResult) return { ok: false, code: 'REPORT_NOT_CONFIGURED', error: 'AI 초안이 아직 설정되지 않았습니다.' }
+      if (db.reportResult.ok === false) return db.reportResult
+      db.reportInputs.push(input.value)
+      return { ok: true, body: gs.sanitizeReportBody(db.reportResult) }
     },
     replaceAll: (req) => {
       const allowed = gs.checkReplaceAllowed(req, db.revision)
