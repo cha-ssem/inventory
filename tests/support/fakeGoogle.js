@@ -84,6 +84,7 @@ export const loadAppsScript = ({ properties = {}, fetchResponse, mail = {} } = {
     },
     Session: { getEffectiveUser: () => ({ getEmail: () => mail.user ?? 'owner@example.com' }) },
     SpreadsheetApp: {
+      flush: () => {},
       getActiveSpreadsheet: () => ({
         getName: () => '시험 시트',
         getSheetByName: (name) => sheets[name] ?? null,

@@ -179,3 +179,30 @@ describe('raiseAlerts 리뷰 반영', () => {
     expect(result.failed).toEqual([{ key: 'RV-02|leak', error: expect.stringMatching(/현장/) }])
   })
 })
+
+describe('확인 리뷰 반영: 되돌리기는 실제로 완료된 요청에서만', () => {
+  it('완료되지 않은 요청에는 되돌릴 출고를 보여 주지 않는다', () => {
+    const { store } = setup()
+    const request = { requestId: 'R', status: 'REQUESTED', skipped: [{ id: 'E', type: 'COMPLETE' }] }
+    store.addPart({ partNo: 'ZZ-01', name: 'z', unit: 'EA', safetyStock: 0 })
+    store.recordInbound({ partNo: 'ZZ-01', qty: 5 })
+    store.recordOutboundBatch([{ partNo: 'ZZ-01', qty: 1 }], { idPrefix: 'E' })
+    expect(pendingReverts(store, request)).toEqual([])
+    expect(pendingReverts(store, { ...request, status: 'COMPLETED' })).toHaveLength(1)
+  })
+})
+
+describe('addRequest 중복 자동 요청 거부', () => {
+  it('저장 직전 다른 탭이 같은 로봇·기준의 자동 요청을 만들었으면 거부한다', () => {
+    let saved = null
+    const shared = { load: () => saved, save: (s) => ((saved = s), true), clear: () => true }
+    let n = 0
+    const tabA = createInspectionStore({ storage: shared, now: () => NOW, makeId: () => `a-${++n}` })
+    tabA.loadSample()
+    const tabB = createInspectionStore({ storage: shared, now: () => NOW, makeId: () => `b-${++n}` })
+    const input = { siteId: 'ST-07', robotId: 'RV-02', source: 'SENSOR', ruleId: 'leak', priority: 'HIGH', title: '누수', reading: { metric: 'leak', value: 1 } }
+    expect(tabA.addRequest(input).ok).toBe(true)
+    expect(tabB.addRequest(input)).toMatchObject({ ok: false, code: 'DUPLICATE_ALERT' })
+    expect(tabB.addRequest({ ...input, source: 'MANUAL', ruleId: undefined }).ok).toBe(true)
+  })
+})

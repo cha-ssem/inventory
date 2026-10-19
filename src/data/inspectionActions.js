@@ -32,8 +32,10 @@ export const completeInspection = ({ store, inspection }, requestId, input, acto
   return { ...completed, low: outbound.low, ...(warning ? { warning } : {}) }
 }
 
-// 반영되지 않은 완료(다른 기기가 먼저 완료함) 가운데, 함께 나간 출고가 아직 취소되지 않은 것
+// 반영되지 않은 완료(다른 기기가 먼저 완료함) 가운데, 함께 나간 출고가 아직 취소되지 않은 것.
+// 요청이 실제로 완료된 경우에만 본다 (완료되지 않았는데 되돌리면 실제로 쓴 부품의 재고가 틀어진다).
 export const pendingReverts = (store, request) => {
+  if (request?.status !== 'COMPLETED') return []
   const { transactions } = store.getState()
   const cancelled = getCancelledIds(transactions)
   return (request?.skipped ?? [])

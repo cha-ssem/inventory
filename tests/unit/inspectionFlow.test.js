@@ -247,13 +247,13 @@ describe('여러 기기의 자동 요청 합치기', () => {
     expect(requests.get(a.requestId)).toMatchObject({ recurCount: 1, lastRecurAt: '2026-10-19T01:00:05.000Z', status: 'REQUESTED' })
   })
 
-  it('합쳐진 요청에 다른 기기가 남긴 작업은 반영하지 않고 skipped로 남긴다', () => {
+  it('다른 기기가 배정까지 한 중복 요청은 합치지 않는다 (배정이 사라지지 않도록, 사람이 하나를 취소해 정리)', () => {
     const a = newRequest(sensor(), '2026-10-19T01:00:00.000Z')
     const b = newRequest(sensor(), '2026-10-19T01:00:05.000Z')
     const assignB = { id: 'x', requestId: b.requestId, type: 'ASSIGN', at: '2026-10-19T01:01:00.000Z', actor: '', payload: { assignee: '이로봇', dueDate: '' } }
-    const merged = foldRequests([a, b, assignB]).get(a.requestId)
-    expect(merged.status).toBe('REQUESTED')
-    expect(merged.skipped.map((e) => e.id)).toEqual(['x'])
+    const requests = foldRequests([a, b, assignB])
+    expect(requests.size).toBe(2)
+    expect(requests.get(b.requestId)).toMatchObject({ status: 'ASSIGNED', assignee: '이로봇' })
   })
 
   it('앞 요청이 끝났으면 새 요청으로 본다', () => {
@@ -271,5 +271,27 @@ describe('여러 기기의 자동 요청 합치기', () => {
       newRequest(requestInput),
     ]
     expect(foldRequests(list).size).toBe(4)
+  })
+})
+
+describe('확인 리뷰 반영: 사람이 손댄 요청은 합치지 않는다', () => {
+  const sensor = { ...requestInput, source: 'SENSOR', ruleId: 'leak', reading: { metric: 'leak', value: 1 } }
+
+  it('다른 기기에서 배정·완료까지 한 자동 요청은 합치지 않고 따로 보인다 (작업이 사라지지 않도록)', () => {
+    const a = newRequest(sensor, '2026-10-19T01:00:00.000Z')
+    let b = [newRequest(sensor, '2026-10-19T01:00:05.000Z')]
+    b = step(b, 'ASSIGN', { assignee: '이로봇' }, '2026-10-19T01:10:00.000Z')
+    b = step(b, 'START', {}, '2026-10-19T01:20:00.000Z')
+    b = step(b, 'COMPLETE', { result: 'OK' }, '2026-10-19T01:30:00.000Z')
+    const requests = foldRequests([a, ...b])
+    expect(requests.size).toBe(2)
+    expect(requests.get(b[0].requestId).status).toBe('COMPLETED')
+    expect(requests.get(a.requestId).skipped).toEqual([])
+  })
+
+  it('같은 시각의 두 요청은 입력 순서와 상관없이 같은 요청을 대표로 본다 (기기마다 결론이 같도록)', () => {
+    const x = { ...newRequest(sensor, '2026-10-19T01:00:00.000Z'), id: 'E-X', requestId: 'R-X' }
+    const y = { ...newRequest(sensor, '2026-10-19T01:00:00.000Z'), id: 'E-Y', requestId: 'R-Y' }
+    expect([...foldRequests([x, y]).keys()]).toEqual([...foldRequests([y, x]).keys()])
   })
 })

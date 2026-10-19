@@ -166,7 +166,13 @@ const APPLY = {
   [RECUR]: (r, e) => ({ recurCount: r.recurCount + 1, lastRecurAt: e.at, lastReading: e.payload.reading ?? r.lastReading }),
 }
 
-const byTime = (a, b) => a.at.localeCompare(b.at) || (a.type === REQUEST ? -1 : b.type === REQUEST ? 1 : a.id.localeCompare(b.id))
+// 같은 시각이면 요청 이벤트를 먼저, 그다음은 ID 순서 (어느 기기에서 접어도 같은 순서가 되도록)
+const byTime = (a, b) => a.at.localeCompare(b.at) || Number(b.type === REQUEST) - Number(a.type === REQUEST) || a.id.localeCompare(b.id)
+
+const HUMAN_TYPES = new Set([ASSIGN, START, COMPLETE, CANCEL])
+
+// 사람이 배정·시작·완료·취소한 적이 있는 요청 (합치면 그 작업이 사라지므로 합치지 않는다)
+const handledRequestIds = (events) => new Set(events.filter((e) => HUMAN_TYPES.has(e.type)).map((e) => e.requestId))
 
 const isAutoRequest = (event) => event.type === REQUEST && event.payload.source !== 'MANUAL' && Boolean(event.payload.ruleId)
 
@@ -191,14 +197,15 @@ const applyEvent = (current, event) => {
 
 // 이벤트를 시각 순서로 접어서 요청별 현재 상태를 만든다.
 // 허용되지 않는 순서의 이벤트(다른 기기가 먼저 완료한 뒤의 완료 등)는 반영하지 않고 skipped에 모은다.
-// 합쳐진 자동 요청(aliases)에 남은 작업도 반영하지 않고 앞 요청의 skipped에 남긴다.
+// 사람이 손대지 않은 중복 자동 요청만 앞 요청의 재발생으로 합친다 (사람이 손댄 요청은 따로 보여 사람이 정리한다).
 export const foldRequests = (events) => {
   const requests = new Map()
   const aliases = new Map()
+  const handled = handledRequestIds(events)
   ;[...events].sort(byTime).forEach((event) => {
     if (event.type === REQUEST) {
       if (requests.has(event.requestId) || aliases.has(event.requestId)) return
-      const twin = isAutoRequest(event) ? openAutoTwin(requests, event) : null
+      const twin = isAutoRequest(event) && !handled.has(event.requestId) ? openAutoTwin(requests, event) : null
       if (twin) {
         aliases.set(event.requestId, twin.requestId)
         requests.set(twin.requestId, mergeTwin(twin, event))

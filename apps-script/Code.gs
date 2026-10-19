@@ -53,7 +53,11 @@ function handleRequest(body) {
     console.error('요청 처리 실패:', action, error && error.stack ? error.stack : error)
     return fail('SERVER_ERROR', '서버에서 처리하지 못했습니다. 잠시 후 다시 시도하세요.')
   } finally {
-    if (lock) lock.releaseLock()
+    // 시트 쓰기를 반영한 뒤 잠금을 푼다 (다음 요청이 옛 시트를 읽지 않도록)
+    if (lock) {
+      SpreadsheetApp.flush()
+      lock.releaseLock()
+    }
   }
 }
 

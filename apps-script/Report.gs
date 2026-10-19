@@ -78,6 +78,8 @@ function withWriteLock(fn) {
   try {
     return fn()
   } finally {
+    // 시트 쓰기는 모아 두었다가 반영되므로, 잠금을 풀기 전에 반영해야 다음 요청이 최신 시트를 읽는다
+    SpreadsheetApp.flush()
     lock.releaseLock()
   }
 }
