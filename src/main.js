@@ -1,3 +1,4 @@
+import faviconUrl from './assets/barcode-logo-black.png'
 import { INSPECTION_STORAGE_KEY, createInspectionStore } from './data/inspectionStore.js'
 import { REPORT_STORAGE_KEY, createReportStore, isValidReportState, normalizeReportState } from './data/reportStore.js'
 import { STORAGE_KEY, createStorage, getBrowserStorageBackend } from './data/storage.js'
@@ -21,6 +22,9 @@ import { renderParts } from './ui/views/partsView.js'
 import { createScanView } from './ui/views/scanView.js'
 import { renderSettings } from './ui/views/settingsView.js'
 import { renderStock } from './ui/views/stockView.js'
+
+// 파비콘은 HTML의 <link>로 두면 빌드 때 별도 파일로 빠지므로, 스크립트로 넣어 index.html 하나에 담는다
+document.getElementById('app-icon')?.setAttribute('href', faviconUrl)
 
 const routes = {
   '/': renderDashboard,
