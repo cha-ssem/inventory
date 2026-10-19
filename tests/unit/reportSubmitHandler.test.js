@@ -12,8 +12,8 @@ const report = {
   open: [],
 }
 
-const setup = ({ properties = {}, mail } = {}) => {
-  const gas = loadAppsScript({ properties: { APP_TOKEN: TOKEN, ...properties }, mail })
+const setup = ({ properties = {}, mail, tryLock } = {}) => {
+  const gas = loadAppsScript({ properties: { APP_TOKEN: TOKEN, ...properties }, mail, tryLock })
   return { gas, post: (body) => gas.post({ action: 'submitReport', token: TOKEN, ...body }) }
 }
 const rows = (gas) => gas.sheets.reports.cells.slice(1).filter((r) => r.length > 0)
@@ -115,5 +115,60 @@ describe('submitReport 요청', () => {
     gas.sheets.reports.cells[row - 1][gas.context.REPORT_COLUMNS.indexOf('mailAt')] = new Date().toISOString()
     expect(post({ report })).toMatchObject({ ok: true, duplicate: true, mailStatus: 'SENDING' })
     expect(gas.mails).toHaveLength(1)
+  })
+
+  it('메일을 보낸 뒤 결과 기록이 잠금을 한 번 못 잡으면 더 오래 기다리며 다시 시도해 SENT로 기록한다', () => {
+    const answers = [true, false, true] // 1단계 잡음 → 2단계 첫 시도 실패 → 두 번째 성공
+    const { gas, post } = setup({ tryLock: () => answers.shift() ?? true })
+    const result = post({ report })
+    expect(result).toMatchObject({ ok: true, mailStatus: 'SENT' })
+    expect(result.warning).toBeUndefined()
+    expect(rows(gas)[0][col(gas, 'mailStatus')]).toBe('SENT')
+    expect(gas.lockWaits.slice(1).every((ms) => ms > gas.context.LOCK_WAIT_MS)).toBe(true)
+  })
+
+  it('결과 기록을 끝내 못 하면 경고를 돌려주고 서버 로그에 남긴다 (SENDING으로 남으면 5분 뒤 메일이 또 갈 수 있어서)', () => {
+    let calls = 0
+    const { gas, post } = setup({ tryLock: () => (calls += 1) === 1 })
+    const result = post({ report })
+    expect(result).toMatchObject({ ok: true, mailStatus: 'SENT', warning: expect.stringMatching(/mailStatus를 SENT로/) })
+    expect(rows(gas)[0][col(gas, 'mailStatus')]).toBe('SENDING')
+    expect(gas.logs.some((line) => line.includes('메일 결과를 시트에 기록하지 못함'))).toBe(true)
+    expect(gas.mails).toHaveLength(1)
+  })
+
+  it('시트가 제목·문장 글자를 바꿔 저장해도 같은 내용 재제출은 CONFLICT가 아니다 (해시로 비교)', () => {
+    const mail = { throws: '실패' }
+    const { gas, post } = setup({ mail })
+    post({ report })
+    gas.sheets.reports.cells[1][col(gas, 'summary')] = '시트가 바꾼 글자'
+    delete mail.throws
+    expect(post({ report })).toMatchObject({ ok: true, duplicate: true, mailStatus: 'SENT' })
+  })
+
+  it('예전에 만든 reports 탭의 빈 머리글을 채운다 (이미 있는 머리글은 그대로)', () => {
+    const { gas, post } = setup()
+    post({ report })
+    const header = gas.sheets.reports.cells[0]
+    header[col(gas, 'mailAt')] = ''
+    header[col(gas, 'contentHash')] = ''
+    header[0] = '보고서 키'
+    gas.context.setup()
+    expect(header[col(gas, 'mailAt')]).toBe('mailAt')
+    expect(header[col(gas, 'contentHash')]).toBe('contentHash')
+    expect(header[0]).toBe('보고서 키')
+  })
+
+  it('줄 기록이 실패하면 하루 제출 한도를 쓰지 않는다', () => {
+    const { gas, post } = setup()
+    post({ report })
+    const original = gas.context.writeRows
+    gas.context.writeRows = () => {
+      throw new Error('시트 쓰기 실패')
+    }
+    const before = gas.props.REPORT_SUBMIT_USAGE
+    expect(post({ report: { ...report, reportId: 'rp-2' } }).ok).toBe(false)
+    expect(gas.props.REPORT_SUBMIT_USAGE).toBe(before)
+    gas.context.writeRows = original
   })
 })

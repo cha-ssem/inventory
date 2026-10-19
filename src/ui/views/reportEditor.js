@@ -61,6 +61,8 @@ const layout = (report) => html`<div class="no-print">${sectionBanner()}</div>
 export const renderReportEditor = (container, { reports, inspection, sync, query, navigate }) => {
   const reportId = query.get('id') || ''
   let dirty = false
+  let busy = false
+  let stale = false // 기다리는 동안 다른 탭이 저장해서 다시 그려야 하는지
 
   const form = () => qs(container, '.report-form')
   const formBody = () => (form() ? formValues(form()) : null)
@@ -73,6 +75,8 @@ export const renderReportEditor = (container, { reports, inspection, sync, query
     }
     setHtml(container, layout(report))
     dirty = false
+    stale = false
+    applyBusy()
   }
 
   const preview = () => {
@@ -82,16 +86,33 @@ export const renderReportEditor = (container, { reports, inspection, sync, query
     dirty = true
   }
 
-  const setBusy = (busy) => {
+  const applyBusy = () => {
     container.querySelectorAll('[data-report-action], .report-form fieldset').forEach((el) => {
       el.disabled = busy
     })
     container.classList.toggle('is-busy', busy)
   }
 
+  const setBusy = (value) => {
+    busy = value
+    applyBusy()
+    if (!busy && stale && !dirty) draw()
+  }
+
+  // AI 초안을 저장하지 못했을 때 문장을 입력 칸에 넣어 둔다 (다시 [저장]할 수 있도록)
+  const fillForm = (body) => {
+    const target = form()
+    if (!target) return
+    Object.entries(body).forEach(([key, value]) => {
+      const field = target.elements.namedItem(key)
+      if (field) field.value = value
+    })
+    preview()
+  }
+
   const actions = createReportActions({
     reports, inspection, sync, reportId, navigate,
-    view: { getDirty: () => dirty, setDirty: (value) => (dirty = value), formBody, setBusy },
+    view: { getDirty: () => dirty, setDirty: (value) => (dirty = value), formBody, setBusy, fillForm },
   })
 
   container.addEventListener('click', async (event) => {
@@ -108,6 +129,11 @@ export const renderReportEditor = (container, { reports, inspection, sync, query
     if (event.target.closest('.report-form')) preview()
   })
   draw()
-  // 문장을 고치는 중에는 다른 탭의 저장으로 화면을 다시 그리지 않는다 (입력이 지워지지 않도록)
-  return reports.subscribe(() => !dirty && draw())
+  // 문장을 고치는 중에는 다른 탭의 저장으로 화면을 다시 그리지 않는다 (입력이 지워지지 않도록).
+  // 서버를 기다리는 중이면 끝난 뒤에 다시 그린다 (다시 그리면서 잠금이 풀리지 않도록).
+  return reports.subscribe(() => {
+    if (dirty) return
+    if (busy) stale = true
+    else draw()
+  })
 }

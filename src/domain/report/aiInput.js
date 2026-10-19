@@ -1,7 +1,7 @@
 // AI 보고서 초안(6단계)에 보낼 내용: 문장을 쓰는 데 필요한 글만 고른다.
 // 내부 ID, 작성자·완료자 이름, 기존 문장은 보내지 않는다 (서버 ReportLogic.gs가 한 번 더 걸러 자른다).
 export const AI_DRAFT_TIMEOUT_MS = 90_000
-export const SUBMIT_TIMEOUT_MS = 60_000 // 시트 기록 + PDF 변환 + 메일
+export const SUBMIT_TIMEOUT_MS = 90_000 // 잠금 대기 + 시트 기록 + PDF 변환 + 메일 + 결과 기록
 // 서버 ReportLogic.gs의 REPORT_LIMITS.maxInputChars와 같게 (비용·요청 시간 보호)
 export const AI_INPUT_MAX_CHARS = 40_000
 

@@ -5,7 +5,7 @@ import { formatNumber, html } from '../dom.js'
 
 export const reportStatusBadge = (status) => html`<span class="badge badge-rp-${status}">${REPORT_STATUSES[status]}</span>`
 
-const MAIL_LABELS = { SENT: '메일 보냄', FAILED: '메일 못 보냄', QUOTA: '메일 한도 초과', PENDING: '메일 보내는 중' }
+const MAIL_LABELS = { SENT: '메일 보냄', FAILED: '메일 못 보냄', QUOTA: '메일 한도 초과', SENDING: '메일 보내는 중' }
 
 const statusText = (report) => {
   if (report.status === 'DRAFT') return '초안 (확정 전)'

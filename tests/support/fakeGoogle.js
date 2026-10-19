@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -25,6 +26,7 @@ const createSheet = () => {
     getValue: () => cells[row - 1]?.[col - 1] ?? '',
     setFontWeight: () => range(row, col, rows, cols),
     setNumberFormats: () => range(row, col, rows, cols),
+    setNumberFormat: () => range(row, col, rows, cols),
     clearContent: () => {
       for (let i = 0; i < rows; i += 1) cells[row - 1 + i] = []
     },
@@ -46,7 +48,9 @@ const createSheet = () => {
 
 // Apps Script 서버 파일(Code·Logic·Ocr·OcrLogic)을 가짜 Google 서비스 위에서 실행한다
 // mail: { quota, throws, user } 메일 발송 흉내. 보낸 메일은 mails에 쌓인다.
-export const loadAppsScript = ({ properties = {}, fetchResponse, mail = {} } = {}) => {
+// tryLock: (waitMs) => boolean 잠금 흉내 (기본: 늘 잡음). 호출한 대기 시간은 lockWaits에 쌓인다.
+export const loadAppsScript = ({ properties = {}, fetchResponse, mail = {}, tryLock = () => true } = {}) => {
+  const lockWaits = []
   const mails = []
   const sheets = {}
   const props = { ...properties }
@@ -64,10 +68,22 @@ export const loadAppsScript = ({ properties = {}, fetchResponse, mail = {} } = {
         },
       }),
     },
-    LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock: () => {} }) },
+    LockService: {
+      getScriptLock: () => ({
+        tryLock: (waitMs) => {
+          lockWaits.push(waitMs)
+          return tryLock(waitMs)
+        },
+        releaseLock: () => {},
+      }),
+    },
     Utilities: {
       getUuid: () => 'uuid-1',
       formatDate: (date) => date.toISOString().slice(0, 10),
+      DigestAlgorithm: { SHA_256: 'sha256' },
+      Charset: { UTF_8: 'utf8' },
+      // Apps Script처럼 -128~127 바이트 배열을 돌려준다
+      computeDigest: (algorithm, text) => [...createHash(algorithm).update(text, 'utf8').digest()].map((b) => (b > 127 ? b - 256 : b)),
       newBlob: (content, type, name) => ({
         getAs: (as) => {
           const blob = { content, type: as, name, setName: (n) => ({ ...blob, name: n }) }
@@ -112,5 +128,5 @@ export const loadAppsScript = ({ properties = {}, fetchResponse, mail = {} } = {
     vm.runInContext(readFileSync(resolve(dir, file), 'utf-8'), context)
   }
   const post = (body) => JSON.parse(context.doPost({ postData: { contents: JSON.stringify(body) } }).text)
-  return { context, sheets, props, fetches, logs, post, mails }
+  return { context, sheets, props, fetches, logs, post, mails, lockWaits }
 }

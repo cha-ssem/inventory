@@ -1,5 +1,6 @@
 import { parseCsv, toCsv, unescapeCell } from '../csv.js'
 import { MODEL_METRICS } from '../inspection/constants.js'
+import { blockedReason } from './deployment.js'
 import { advance, clearAnomaly, createSimulation, injectAnomaly, latest } from './generator.js'
 import { evaluateRule, rulesFor } from './rules.js'
 
@@ -26,7 +27,17 @@ const YEAR_RANGE = [2000, 2100]
 const MAX_RAW_IN_MESSAGE = 40
 
 // ISO(시차 포함)는 그대로, "YYYY-MM-DD HH:mm[:ss]"는 이 기기 시간(한국 시간)으로 읽는다. 날짜만·엑셀 일련번호는 받지 않는다.
+// 2026-02-31, 25:61처럼 없는 날짜·시각은 Date가 다음 달·날로 넘기므로, 숫자 범위를 먼저 확인한다
+const isRealDateTime = ([y, mo, d, h, mi, sec]) => {
+  const day = new Date(Date.UTC(y, mo - 1, d))
+  return day.getUTCMonth() === mo - 1 && day.getUTCDate() === d && h <= 23 && mi <= 59 && sec <= 59
+}
+
+const DATE_PARTS = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/
+
 const parseTime = (text) => {
+  const parts = DATE_PARTS.exec(text)
+  if (!parts || !isRealDateTime(parts.slice(1).map((v) => Number(v ?? 0)))) return Number.NaN
   let time = Number.NaN
   if (ISO_TIME.test(text)) time = Date.parse(text)
   const local = LOCAL_TIME.exec(text)
@@ -107,8 +118,9 @@ const segmentsOf = (rule, points) => {
   return segments.map((s) => ({ from: s.from, to: s.points.at(-1).at, count: s.points.length, worst: worstOf(rule, s.points.map((p) => p.value)) }))
 }
 
-// 위반 구간: [{ robotId, rule, from, to, count, worst, deployed }]. deployed=false면 본사 정비 중이라 점검 요청을 만들 수 없다.
-export const analyzeLog = (rows, robots) => {
+// 위반 구간: [{ robotId, rule, from, to, count, worst, deployed, blocked }].
+// deployed=false면 점검 요청을 만들 수 없고, blocked에 그 이유(본사 정비 중·사용 중지)가 있다.
+export const analyzeLog = (rows, robots, sites) => {
   const byKey = new Map()
   rows.forEach((r) => {
     const key = `${r.robotId}|${r.metric}`
@@ -117,7 +129,7 @@ export const analyzeLog = (rows, robots) => {
   return robots.flatMap((robot) =>
     rulesFor(robot.model).flatMap((rule) =>
       segmentsOf(rule, byKey.get(`${robot.robotId}|${rule.metric}`) ?? []).map((segment) => ({
-        robotId: robot.robotId, rule, ...segment, deployed: Boolean(robot.siteId),
+        robotId: robot.robotId, rule, ...segment, deployed: !blockedReason(robot, sites), blocked: blockedReason(robot, sites),
       })),
     ),
   )

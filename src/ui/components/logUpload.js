@@ -17,7 +17,7 @@ const segmentTable = (segments, robots) => {
           ${segments.map(
             (s, i) => html`<tr>
               <td>${s.deployed ? html`<input type="checkbox" data-segment="${i}" checked aria-label="${name(s.robotId)} ${s.rule.title} 선택" />` : ''}</td>
-              <td>${name(s.robotId)}${s.deployed ? '' : html` <span class="muted">(본사 정비 중이라 요청 불가)</span>`}</td>
+              <td>${name(s.robotId)}${s.deployed ? '' : html` <span class="muted">(${s.blocked}이라 요청 불가)</span>`}</td>
               <td>${priorityBadge(s.rule.priority)} ${s.rule.title}</td>
               <td class="nowrap">${formatDateTime(s.from)} ~ ${formatDateTime(s.to)}</td>
               <td class="num">${formatNumber(s.count)}</td>
@@ -54,7 +54,7 @@ export const mountLogUpload = (slot, { inspection, onViolations }) => {
     try {
       const parsed = parseSensorLog(await readFileAsText(file), robots())
       if (!parsed.ok) return toast(parsed.error, 'error')
-      segments = analyzeLog(parsed.rows, robots())
+      segments = analyzeLog(parsed.rows, robots(), inspection.getState().sites)
       const skipped = parsed.skipped > 0 ? ` · 건너뛴 행 ${formatNumber(parsed.skipped)}개 (${parsed.errors[0]})` : ''
       const duplicates = parsed.duplicates > 0 ? ` · 같은 시각 중복 행 ${formatNumber(parsed.duplicates)}개는 하나로 합침` : ''
       qs(slot, '.log-summary').textContent = `${formatNumber(parsed.rows.length)}행 분석 · 기준을 넘은 구간 ${segments.length}개${skipped}${duplicates}`
@@ -71,8 +71,10 @@ export const mountLogUpload = (slot, { inspection, onViolations }) => {
     const violations = chosen
       .map((s) => ({ robot: robots().find((r) => r.robotId === s.robotId), rule: s.rule, reading: { metric: s.rule.metric, value: s.worst } }))
       .filter((v) => v.robot)
-    const { created, recurred, failed } = onViolations(violations)
-    if (created.length === 0 && recurred === 0 && failed.length === 0) toast('이미 같은 내용의 열린 점검 요청이 있습니다.', 'info')
+    const { created, recurred, failed, suppressed } = onViolations(violations)
+    if (created.length > 0 || recurred > 0 || failed.length > 0) return
+    if (suppressed > 0) toast('조금 전 만들지 못한 점검 요청은 10분 동안 다시 시도하지 않습니다. 잠시 뒤 다시 누르세요.', 'info')
+    else toast('이미 같은 내용의 열린 점검 요청이 있습니다.', 'info')
   }
 
   const onClick = (event) => {

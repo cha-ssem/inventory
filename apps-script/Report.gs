@@ -70,11 +70,15 @@ function handleReportDraft(req, props) {
 // 스크립트 속성(선택): REPORT_RECIPIENTS(받는 사람, 쉼표로 구분, 최대 5명. 비었으면 배포한 본인),
 //                    REPORT_SUBMIT_DAILY_LIMIT(하루 새 제출 수, 기본 10, 0이면 끔). 사용 횟수는 REPORT_SUBMIT_USAGE.
 // 잠금은 시트를 읽고 쓰는 동안만 잡는다. PDF 변환·메일은 잠금 밖에서 해서 다른 기기의 저장이 기다리지 않게 한다.
-// (메일을 보낸 직후 상태 기록이 실패하면 SENDING으로 남아 5분 뒤 다시 보낼 수 있다: 알려진 한계)
+// 메일을 보낸 뒤 결과 기록은 더 오래 기다리며 한 번 더 시도한다. 그래도 못 쓰면 SENDING으로 남아 5분 뒤 다시 보낼 수
+// 있으므로, 앱에 경고를 돌려주고 서버 로그에 남긴다.
+var MAIL_RECORD_LOCK_WAIT_MS = 25000
+var MAIL_RECORD_ATTEMPTS = 2
+var MAIL_NOT_RECORDED = '메일은 보냈지만 시트에 메일 상태를 기록하지 못했습니다. 메일이 또 가지 않도록 5분 안에 시트 reports 탭의 mailStatus를 SENT로 고쳐 주세요.'
 
-function withWriteLock(fn) {
+function withWriteLock(fn, waitMs) {
   var lock = LockService.getScriptLock()
-  if (!lock.tryLock(LOCK_WAIT_MS)) return fail('BUSY', '다른 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.')
+  if (!lock.tryLock(waitMs || LOCK_WAIT_MS)) return fail('BUSY', '다른 저장 작업이 진행 중입니다. 잠시 후 다시 시도하세요.')
   try {
     return fn()
   } finally {
@@ -111,10 +115,38 @@ function readReportRow(sheet, rowNumber) {
   return row
 }
 
+// 예전 줄은 글자 서식이 아닐 수 있어서, 시각이 날짜로 바뀌지 않게 서식을 먼저 건다
 function setMailCells(sheet, rowNumber, values) {
   Object.keys(values).forEach(function (col) {
-    sheet.getRange(rowNumber, REPORT_COLUMNS.indexOf(col) + 1, 1, 1).setValues([[values[col]]])
+    sheet.getRange(rowNumber, REPORT_COLUMNS.indexOf(col) + 1, 1, 1).setNumberFormat('@').setValues([[toCell(values[col])]])
   })
+}
+
+// 메일을 보낸 뒤 결과를 기록한다. 잠금을 못 잡거나 쓰다가 실패하면 한 번 더 시도한다.
+function recordMailResult(rowNumber, status) {
+  for (var attempt = 1; attempt <= MAIL_RECORD_ATTEMPTS; attempt += 1) {
+    try {
+      var result = withWriteLock(function () {
+        setMailCells(getSheet(SHEET_REPORTS, REPORT_COLUMNS), rowNumber, { mailStatus: status, mailAt: new Date().toISOString() })
+        return { ok: true }
+      }, MAIL_RECORD_LOCK_WAIT_MS)
+      if (result.ok) return true
+    } catch (error) {
+      console.error('메일 결과 기록 실패:', error && error.message ? error.message : error)
+    }
+  }
+  console.error('메일 결과를 시트에 기록하지 못함: reports 탭', rowNumber, '행, 메일 상태', status)
+  return false
+}
+
+// 같은 버전 재제출의 내용 비교용. 시트가 글자를 바꿔 저장해도(앞 작은따옴표 등) 비교가 깨지지 않게 해시를 따로 둔다.
+function submissionHash(sub) {
+  var text = JSON.stringify([sub.title].concat(BODY_KEYS.map(function (k) {
+    return sub.body[k]
+  })))
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8).map(function (b) {
+    return ('0' + (b & 0xff).toString(16)).slice(-2)
+  }).join('')
 }
 
 function readSubmitUsage(props) {
@@ -144,6 +176,7 @@ function sendReportMail(sub, submittedAt, recipients) {
 // 1단계(잠금 안): 중복·내용·한도를 확인하고, 새 줄을 쓰거나 기존 줄을 "보내는 중"으로 표시한다
 function reserveSubmission(sub, props, recipients) {
   var sheet = getSheet(SHEET_REPORTS, REPORT_COLUMNS)
+  fillMissingHeaders(sheet, REPORT_COLUMNS)
   var index = readReportIndex(sheet)
   var now = new Date()
   var plan = planSubmission(index, sub.key, now.getTime())
@@ -157,28 +190,29 @@ function reserveSubmission(sub, props, recipients) {
   }
   var quota = checkSubmitQuota(readSubmitUsage(props), todayInSeoul(), parseSubmitLimit(props.getProperty('REPORT_SUBMIT_DAILY_LIMIT')))
   if (!quota.ok) return quota
-  props.setProperty('REPORT_SUBMIT_USAGE', JSON.stringify(quota.next))
   var row = sheet.getLastRow() + 1
   writeRows(sheet, REPORT_COLUMNS, row, [reportToRow(sub, now.toISOString(), recipients, MAIL_STATUS.SENDING, now.toISOString())])
+  // 줄을 쓴 뒤에 센다 (쓰기가 실패했는데 한도만 줄지 않도록)
+  props.setProperty('REPORT_SUBMIT_USAGE', JSON.stringify(quota.next))
   return { ok: true, rowNumber: row, duplicate: false, sendMail: true, submittedAt: now.toISOString(), mailStatus: MAIL_STATUS.SENDING }
 }
 
 function handleSubmitReport(req, props) {
-  var sub = sanitizeSubmission(req.report)
-  if (!sub.ok) return sub
+  var checked = sanitizeSubmission(req.report)
+  if (!checked.ok) return checked
+  var sub = withContentHash(checked.value, submissionHash(checked.value))
   var recipients = parseRecipients(props.getProperty('REPORT_RECIPIENTS'), Session.getEffectiveUser().getEmail())
   var reserved = withWriteLock(function () {
-    return reserveSubmission(sub.value, props, recipients)
+    return reserveSubmission(sub, props, recipients)
   })
   if (!reserved.ok) return reserved
   var mail = { status: reserved.mailStatus, warning: '' }
   if (reserved.sendMail) {
-    mail = sendReportMail(sub.value, reserved.submittedAt, recipients)
+    mail = sendReportMail(sub, reserved.submittedAt, recipients)
     // 2단계(잠금 안): 메일 결과를 기록한다
-    withWriteLock(function () {
-      setMailCells(getSheet(SHEET_REPORTS, REPORT_COLUMNS), reserved.rowNumber, { mailStatus: mail.status, mailAt: new Date().toISOString() })
-      return { ok: true }
-    })
+    if (!recordMailResult(reserved.rowNumber, mail.status) && mail.status === MAIL_STATUS.SENT) {
+      mail = { status: mail.status, warning: MAIL_NOT_RECORDED }
+    }
   }
   return {
     ok: true, duplicate: reserved.duplicate, submittedAt: reserved.submittedAt, mailStatus: mail.status, recipients: recipients.length,

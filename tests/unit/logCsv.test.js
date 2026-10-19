@@ -7,6 +7,8 @@ const robots = [
   { robotId: 'RV-06', model: 'V4', siteId: null, name: 'V4 로봇팔 1호기' },
 ]
 
+const sites = [{ siteId: 'ST-01' }, { siteId: 'ST-03' }]
+
 const csv = (lines) => ['timestamp,robotId,metric,value', ...lines].join('\n')
 
 describe('parseSensorLog', () => {
@@ -58,24 +60,24 @@ describe('analyzeLog', () => {
 
   it('기준을 넘은 구간을 시작·끝 시각, 횟수, 가장 나쁜 값으로 묶는다', () => {
     const rows = series('RV-01', 'motorCurrent', [8, 22, 23, 25, 24, 9, 8])
-    const [segment] = analyzeLog(rows, robots)
+    const [segment] = analyzeLog(rows, robots, sites)
     expect(segment).toMatchObject({
       robotId: 'RV-01', rule: { id: 'motor-overcurrent' }, from: minute(3), to: minute(4), count: 2, worst: 25,
     })
   })
 
   it('MIN 기준은 가장 낮은 값을 가장 나쁜 값으로 본다', () => {
-    const [segment] = analyzeLog(series('RV-03', 'sonarSignal', [80, 30, 25, 20, 80]), robots)
+    const [segment] = analyzeLog(series('RV-03', 'sonarSignal', [80, 30, 25, 20, 80]), robots, sites)
     expect(segment).toMatchObject({ rule: { id: 'sonar-weak' }, worst: 20 })
   })
 
   it('떨어진 두 구간은 따로 센다', () => {
     const rows = series('RV-01', 'leak', [0, 1, 0, 1, 0])
-    expect(analyzeLog(rows, robots)).toHaveLength(2)
+    expect(analyzeLog(rows, robots, sites)).toHaveLength(2)
   })
 
   it('위반이 없으면 빈 목록', () => {
-    expect(analyzeLog(series('RV-01', 'depth', [10, 11]), robots)).toEqual([])
+    expect(analyzeLog(series('RV-01', 'depth', [10, 11]), robots, sites)).toEqual([])
   })
 })
 
@@ -86,7 +88,7 @@ describe('buildSampleLog', () => {
     expect(parsed.ok).toBe(true)
     expect(parsed.skipped).toBe(0)
     expect(new Set(parsed.rows.map((r) => r.robotId))).toEqual(new Set(['RV-01', 'RV-03']))
-    const rules = analyzeLog(parsed.rows, robots).map((s) => s.rule.id)
+    const rules = analyzeLog(parsed.rows, robots, sites).map((s) => s.rule.id)
     expect(rules).toEqual(expect.arrayContaining(['sonar-weak', 'battery-low']))
   })
 })
@@ -122,7 +124,7 @@ describe('리뷰 반영: 날짜·숫자·중복 행', () => {
     expect(result.rows).toHaveLength(1)
     expect(result.rows[0].value).toBe(8)
     expect(result.duplicates).toBe(2)
-    expect(analyzeLog(result.rows, robots)).toEqual([])
+    expect(analyzeLog(result.rows, robots, sites)).toEqual([])
   })
 
   it('오류 메시지 속 원본 값은 40자로 자른다', () => {
@@ -136,7 +138,7 @@ describe('리뷰 반영: 날짜·숫자·중복 행', () => {
 
   it('본사 정비 중인 로봇 구간은 요청을 만들 수 없다고 표시한다', () => {
     const rows = ['2026-10-19T01:00:00Z', '2026-10-19T01:01:00Z'].map((t) => ({ at: t, robotId: 'RV-06', metric: 'leak', value: 1 }))
-    const [segment] = analyzeLog(rows, [...robots, { robotId: 'RV-06', model: 'V4', siteId: null }].filter((r, i, a) => a.findIndex((x) => x.robotId === r.robotId) === i))
+    const [segment] = analyzeLog(rows, [...robots, { robotId: 'RV-06', model: 'V4', siteId: null }].filter((r, i, a) => a.findIndex((x) => x.robotId === r.robotId) === i), sites)
     expect(segment).toMatchObject({ robotId: 'RV-06', deployed: false })
   })
 
@@ -146,3 +148,25 @@ describe('리뷰 반영: 날짜·숫자·중복 행', () => {
     expect(parsed.ok).toBe(true)
   })
 })
+
+describe('확인 리뷰 반영: 없는 날짜, 요청할 수 없는 로봇', () => {
+  it('없는 날짜·시각(2월 31일, 25시 61분)은 다음 날로 넘기지 않고 건너뛴다, 윤년 2월 29일은 받는다', () => {
+    const result = parseSensorLog(
+      csv(['2026-02-31 10:00,RV-01,depth,1', '2026-10-19 25:61,RV-01,depth,2', '2026-02-30T01:00:00Z,RV-01,depth,3', '2026-10-19T24:00:00Z,RV-01,depth,4', '2028-02-29 10:00,RV-01,depth,5']),
+      robots,
+    )
+    expect(result.rows.map((r) => r.value)).toEqual([5])
+    expect(result.skipped).toBe(4)
+  })
+
+  it('사용 중지한 로봇·현장의 구간은 요청할 수 없다고 이유와 함께 표시한다', () => {
+    const rows = series2('RV-01', 'leak', [1, 1])
+    expect(analyzeLog(rows, [{ ...robots[0], active: false }], sites)[0]).toMatchObject({ deployed: false, blocked: '사용 중지한 로봇' })
+    expect(analyzeLog(rows, robots, [{ siteId: 'ST-01', active: false }])[0]).toMatchObject({ deployed: false, blocked: '사용 중지한 현장' })
+    expect(analyzeLog(rows, robots, sites)[0]).toMatchObject({ deployed: true, blocked: '' })
+  })
+})
+
+function series2(robotId, metric, values) {
+  return values.map((value, i) => ({ at: new Date(Date.parse('2026-10-19T01:00:00Z') + i * 60_000).toISOString(), robotId, metric, value }))
+}

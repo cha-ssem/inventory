@@ -92,6 +92,16 @@ function getSheet(name, columns) {
   return sheet
 }
 
+// 예전에 만든 탭에 나중에 더한 열의 머리글이 비어 있으면 채운다 (이미 있는 머리글은 그대로)
+function fillMissingHeaders(sheet, columns) {
+  var range = sheet.getRange(1, 1, 1, columns.length)
+  var current = range.getValues()[0]
+  if (current.every(function (v, i) { return v === columns[i] })) return
+  range.setValues([columns.map(function (col, i) {
+    return current[i] === '' || current[i] === null || current[i] === undefined ? col : current[i]
+  })])
+}
+
 // 쓸 범위만큼 행을 늘리고(기본 1000행), 그 범위에 서식을 다시 걸어 품번·일시가 숫자나 날짜로 바뀌지 않게 한다
 function writeRows(sheet, columns, startRow, rows) {
   if (rows.length === 0) return
@@ -230,7 +240,7 @@ function setup() {
   getSheet(SHEET_TX, TX_COLUMNS)
   getSheet(SHEET_MAPPINGS, MAPPING_COLUMNS)
   setupInspectionSheets()
-  getSheet(SHEET_REPORTS, REPORT_COLUMNS)
+  fillMissingHeaders(getSheet(SHEET_REPORTS, REPORT_COLUMNS), REPORT_COLUMNS)
   var props = PropertiesService.getScriptProperties()
   if (!props.getProperty('APP_TOKEN')) props.setProperty('APP_TOKEN', Utilities.getUuid().replace(/-/g, ''))
   getDataVersion(props)

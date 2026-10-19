@@ -10,14 +10,24 @@ const AI_CONFIRM = '점검 기록(현장·점검 내용·조치·남은 요청)�
 const AI_TOO_LARGE = '보고서 내용이 많아 AI 초안을 만들 수 없습니다. 기간(주간 → 일간)이나 현장 수를 줄여 새 보고서를 만드세요.'
 const SUBMIT_TIMEOUT = '서버 응답이 늦어 결과를 받지 못했습니다. 서버에서는 처리됐을 수 있으니 잠시 뒤 다시 누르세요. 다시 눌러도 시트 줄과 메일은 늘지 않습니다.'
 
-// 보고서 화면의 단추 동작. view: { getDirty, setDirty, formBody, setBusy } (화면 상태를 다루는 함수)
+const AI_NOT_SAVED = 'AI 초안을 입력 칸에 넣었지만 브라우저에 저장하지 못했습니다. 저장 공간을 확인한 뒤 [저장]을 누르세요.'
+
+// 보고서 화면의 단추 동작. view: { getDirty, setDirty, formBody, setBusy, fillForm } (화면 상태를 다루는 함수)
 export const createReportActions = ({ reports, inspection, sync, reportId, navigate, view }) => {
+  let aiPending = false // AI 초안을 입력 칸에만 넣고 아직 저장하지 못함
+
   // 저장에 성공해야 화면을 새 내용으로 다시 그려도 된다 (실패하면 고친 내용을 화면에 그대로 둔다)
-  const save = () => {
+  const update = (changes, extra) => {
     const wasDirty = view.getDirty()
     view.setDirty(false)
-    const result = reports.update(reportId, view.formBody())
+    const result = reports.update(reportId, changes, extra)
     if (!result.ok) view.setDirty(wasDirty)
+    return result
+  }
+
+  const save = () => {
+    const result = update(view.formBody(), aiPending ? { aiUsed: true } : undefined)
+    if (result.ok) aiPending = false
     return result
   }
 
@@ -35,8 +45,9 @@ export const createReportActions = ({ reports, inspection, sync, reportId, navig
     const ok = await confirmDialog({ title: '데이터 다시 모으기', message: '지금 점검 기록으로 다시 모읍니다. 고친 문장은 새 데이터의 기본 문장으로 바뀝니다.', confirmLabel: '다시 모으기' })
     if (!ok) return
     const snapshot = collectReport(inspection.listRequests(), inspection.getState(), reports.get(reportId))
-    view.setDirty(false)
-    notifyResult(reports.update(reportId, defaultBody(snapshot), { snapshot }), '점검 기록을 다시 모았습니다.')
+    const result = update(defaultBody(snapshot), { snapshot })
+    if (result.ok) aiPending = false
+    notifyResult(result, '점검 기록을 다시 모았습니다.')
   }
 
   // 6단계: Apps Script를 거쳐 Claude가 네 문단을 쓴다 (API 키는 서버에만 있음)
@@ -48,8 +59,12 @@ export const createReportActions = ({ reports, inspection, sync, reportId, navig
     const result = await withBusy(() => sync.callServer('reportDraft', { report: input }, { timeoutMs: AI_DRAFT_TIMEOUT_MS }))
     if (!result.ok) return toast(result.error || 'AI 초안을 만들지 못했습니다.', 'error')
     if (view.getDirty() && !(await confirmDialog({ title: 'AI 초안 넣기', message: '기다리는 동안 고친 문장이 있습니다. AI 초안으로 바꿀까요?', confirmLabel: '바꾸기' }))) return
-    view.setDirty(false)
-    notifyResult(reports.update(reportId, result.body, { aiUsed: true }), 'AI 초안을 넣었습니다. 내용을 확인하고 고친 뒤 확정하세요.')
+    const saved = update(result.body, { aiUsed: true })
+    if (saved.ok) return notifyResult(saved, 'AI 초안을 넣었습니다. 내용을 확인하고 고친 뒤 확정하세요.')
+    // 저장하지 못해도 하루 사용 횟수는 이미 썼으니, 문장을 버리지 않고 입력 칸에 넣어 둔다
+    view.fillForm(result.body)
+    aiPending = true
+    toast(AI_NOT_SAVED, 'error')
   }
 
   // 7단계: 시트 기록과 메일. 같은 보고서를 다시 보내도 서버가 줄·메일을 늘리지 않는다 (메일 실패였으면 메일만 다시).

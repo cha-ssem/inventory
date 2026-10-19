@@ -63,11 +63,11 @@ describe('parseRecipients', () => {
 describe('reportToRow / planSubmission', () => {
   it('시트 한 줄로 바꾸고, 수식처럼 보이는 글은 작은따옴표로 막는다', () => {
     const value = gs.sanitizeSubmission({ ...submission, author: '=CMD()' }).value
-    const row = gs.reportToRow(value, '2026-10-19T02:00:00.000Z', ['me@x.com'], 'PENDING')
+    const row = gs.reportToRow(value, '2026-10-19T02:00:00.000Z', ['me@x.com'], 'SENDING')
     expect(row).toHaveLength(gs.REPORT_COLUMNS.length)
     expect(row[gs.REPORT_COLUMNS.indexOf('reportKey')]).toBe('rp-1|2')
     expect(row[gs.REPORT_COLUMNS.indexOf('author')]).toBe("'=CMD()")
-    expect(row[gs.REPORT_COLUMNS.indexOf('mailStatus')]).toBe('PENDING')
+    expect(row[gs.REPORT_COLUMNS.indexOf('mailStatus')]).toBe('SENDING')
   })
 
   const NOW_MS = Date.parse('2026-10-19T02:00:00.000Z')
@@ -94,6 +94,16 @@ describe('reportToRow / planSubmission', () => {
     const tricky = gs.sanitizeSubmission({ ...submission, body: { ...submission.body, summary: '=1+1 요약' } }).value
     const trickyStored = Object.fromEntries(gs.REPORT_COLUMNS.map((c, i) => [c, gs.reportToRow(tricky, 'x', [], 'SENT')[i]]))
     expect(gs.sameSubmission(trickyStored, tricky)).toBe(true)
+  })
+
+  it('해시가 있는 줄은 해시로 비교한다 (시트가 글자를 바꿔 저장해도 같은 내용이면 같다), 해시 열이 없는 예전 줄은 글자로', () => {
+    const value = gs.withContentHash(gs.sanitizeSubmission(submission).value, 'h1')
+    const stored = Object.fromEntries(gs.REPORT_COLUMNS.map((c, i) => [c, gs.reportToRow(value, 'x', [], 'SENT')[i]]))
+    expect(stored.contentHash).toBe('h1')
+    expect(gs.sameSubmission({ ...stored, summary: '시트가 바꾼 글자' }, value)).toBe(true)
+    expect(gs.sameSubmission(stored, { ...value, contentHash: 'h2' })).toBe(false)
+    expect(gs.sameSubmission({ ...stored, contentHash: '' }, value)).toBe(true)
+    expect(value).not.toBe(gs.sanitizeSubmission(submission).value)
   })
 
   it('하루 제출 한도: 새 줄을 추가할 때만 센다, 0이면 끔', () => {

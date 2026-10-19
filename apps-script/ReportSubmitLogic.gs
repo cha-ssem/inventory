@@ -7,7 +7,7 @@ var SHEET_REPORTS = 'reports'
 var REPORT_COLUMNS = [
   'reportKey', 'reportId', 'version', 'title', 'period', 'from', 'to', 'sites', 'author', 'aiUsed',
   'completed', 'issue', 'open', 'urgentOpen', 'summary', 'findings', 'actions', 'nextPlan',
-  'finalizedAt', 'submittedAt', 'mailTo', 'mailStatus', 'mailAt',
+  'finalizedAt', 'submittedAt', 'mailTo', 'mailStatus', 'mailAt', 'contentHash',
 ]
 var REPORT_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
 var EMAIL = /^[^\s@,;<>"']+@[^\s@,;<>"']+\.[^\s@,;<>"']+$/
@@ -62,6 +62,7 @@ function reportToRow(sub, submittedAt, mailTo, mailStatus, mailAt) {
     completed: sub.stats.completed, issue: sub.stats.issue, open: sub.stats.open, urgentOpen: sub.stats.urgentOpen,
     summary: sub.body.summary, findings: sub.body.findings, actions: sub.body.actions, nextPlan: sub.body.nextPlan,
     finalizedAt: sub.finalizedAt, submittedAt: submittedAt, mailTo: mailTo.join(', '), mailStatus: mailStatus, mailAt: mailAt || '',
+    contentHash: sub.contentHash || '',
   }
   return REPORT_COLUMNS.map(function (col) {
     return toCell(values[col])
@@ -83,9 +84,21 @@ function planSubmission(rows, key, nowMs) {
   return { append: true, rowIndex: null, sendMail: true }
 }
 
+// 제출 내용에 해시를 더한 새 객체 (해시는 Report.gs가 Utilities로 계산)
+function withContentHash(sub, hash) {
+  var value = {}
+  Object.keys(sub).forEach(function (k) {
+    value[k] = sub[k]
+  })
+  value.contentHash = hash
+  return value
+}
+
 // 이미 기록한 줄과 제목·문장이 같은지 (확정 후 내용이 바뀐 채 다시 오면 메일과 시트가 달라지지 않도록 거부)
-// stored: 시트 줄을 { 열 이름: 셀 값 }으로 바꾼 것
+// stored: 시트 줄을 { 열 이름: 셀 값 }으로 바꾼 것. 해시가 있으면 해시로, 해시 열이 생기기 전 줄은 글자로 비교한다.
 function sameSubmission(stored, sub) {
+  var storedHash = fromTextCell(stored.contentHash)
+  if (storedHash && sub.contentHash) return storedHash === sub.contentHash
   var same = function (col, value) {
     return fromTextCell(stored[col]) === String(value)
   }
