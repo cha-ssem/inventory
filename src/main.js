@@ -12,6 +12,7 @@ import { renderHistory } from './ui/views/historyView.js'
 import { renderInspectionDetail } from './ui/views/inspectionDetail.js'
 import { renderInspections } from './ui/views/inspectionsView.js'
 import { renderLabels } from './ui/views/labelsView.js'
+import { renderMonitor } from './ui/views/monitorView.js'
 import { renderOcrInbound } from './ui/views/ocrView.js'
 import { renderParts } from './ui/views/partsView.js'
 import { createScanView } from './ui/views/scanView.js'
@@ -29,6 +30,7 @@ const routes = {
   '/labels': renderLabels,
   '/inspections': renderInspections,
   '/inspection': renderInspectionDetail,
+  '/monitor': renderMonitor,
   '/settings': renderSettings,
 }
 

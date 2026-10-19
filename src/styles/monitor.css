@@ -1,0 +1,156 @@
+/* 센서 모니터링 (영풍산업) */
+.robot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.robot-grid > .panel {
+  margin: 0;
+}
+
+.robot-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.robot-head h2 {
+  font-size: 1.1rem;
+}
+
+.robot-head p {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+}
+
+.robot-state {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.robot-state[data-state='ok'] {
+  background: var(--in-soft);
+  color: var(--in);
+}
+
+.robot-state[data-state='warn'] {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.robot-state[data-state='alert'] {
+  background: var(--danger);
+  color: #fff;
+}
+
+.metric-list {
+  margin: 0 0 0.75rem;
+}
+
+.metric-row {
+  display: grid;
+  grid-template-columns: 6.5rem 5.5rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+}
+
+.metric-row dt {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.metric-row dd {
+  margin: 0;
+}
+
+.metric-row .value {
+  font-family: var(--mono);
+  font-weight: 700;
+  text-align: right;
+}
+
+.metric-row.is-alert {
+  background: var(--danger-soft);
+}
+
+.metric-row.is-alert .value {
+  color: var(--danger);
+}
+
+.spark {
+  width: 100%;
+  height: 28px;
+  display: block;
+}
+
+.spark polyline {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.metric-row.is-alert .spark polyline {
+  stroke: var(--danger);
+}
+
+.anomaly-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.alert-feed {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-feed li {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.alert-feed li:last-child {
+  border-bottom: none;
+}
+
+.alert-feed .when {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* 화면에는 숨기고 화면 읽기 프로그램에만 읽힌다 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .robot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-row {
+    grid-template-columns: 5.5rem 5rem 1fr;
+  }
+}

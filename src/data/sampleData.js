@@ -1,4 +1,5 @@
 import { createPart } from '../domain/parts.js'
+import { createRandom } from '../domain/random.js'
 import {
   SAMPLE_DESTINATIONS,
   SAMPLE_LOW_PARTS,
@@ -10,17 +11,6 @@ import {
 const DAY_MS = 86_400_000
 const HISTORY_DAYS = 14
 const EVENTS_PER_PART = 3
-
-// 같은 seed면 항상 같은 값을 내는 의사 난수 (mulberry32)
-const createRandom = (seed) => {
-  let t = seed >>> 0
-  return () => {
-    t = (t + 0x6d2b79f5) >>> 0
-    let r = Math.imul(t ^ (t >>> 15), 1 | t)
-    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
-    return ((r ^ (r >>> 14)) >>> 0) / 4_294_967_296
-  }
-}
 
 const createContext = (now, seed) => {
   const random = createRandom(seed)

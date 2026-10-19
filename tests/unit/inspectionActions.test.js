@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { completeInspection } from '../../src/data/inspectionActions.js'
+import { completeInspection, raiseAlerts } from '../../src/data/inspectionActions.js'
 import { createInspectionStore } from '../../src/data/inspectionStore.js'
 import { createStore } from '../../src/data/store.js'
 import { generateRobotStock } from '../../src/data/inspectionSample.js'
@@ -66,5 +66,31 @@ describe('completeInspection', () => {
     const stock = store.getStockMap().get('YP-SP-004')
     const result = completeInspection({ store, inspection }, requestId, { result: 'OK', usedParts: [{ partNo: 'YP-SP-004', qty: stock }] })
     expect(result).toMatchObject({ ok: true, low: ['YP-SP-004'] })
+  })
+})
+
+describe('raiseAlerts', () => {
+  const leakRule = { id: 'leak', metric: 'leak', kind: 'BOOL', threshold: 1, windowN: 1, priority: 'HIGH', title: '누수 감지', cooldownMin: 10 }
+  const robot = { robotId: 'RV-02', model: 'V1', siteId: 'ST-07', name: 'V1 영상 2호기' }
+  const violation = { robot, rule: leakRule, reading: { metric: 'leak', value: 1 } }
+
+  it('위반을 센서 점검 요청으로 기록하고, 다시 생기면 재발생으로 남긴다', () => {
+    const { inspection } = setup()
+    const first = raiseAlerts(inspection, [violation], { now: NOW })
+    expect(first.created).toHaveLength(1)
+    const request = inspection.getRequest(first.created[0].requestId)
+    expect(request).toMatchObject({ source: 'SENSOR', priority: 'HIGH', ruleId: 'leak', status: 'REQUESTED', requestedBy: '센서 감시' })
+
+    const soon = raiseAlerts(inspection, [violation], { now: NOW })
+    expect(soon).toEqual({ created: [], recurred: 0 })
+    const later = raiseAlerts(inspection, [violation], { now: '2026-10-19T09:30:00.000Z' })
+    expect(later.recurred).toBe(1)
+  })
+
+  it('위반이 없으면 아무것도 하지 않는다', () => {
+    const { inspection } = setup()
+    const before = inspection.getState()
+    expect(raiseAlerts(inspection, [], { now: NOW })).toEqual({ created: [], recurred: 0 })
+    expect(inspection.getState()).toBe(before)
   })
 })
