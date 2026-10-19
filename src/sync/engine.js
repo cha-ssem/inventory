@@ -2,6 +2,7 @@ import { isValidPart, isValidTransaction } from '../domain/backup.js'
 import { validateSyncConfig } from './config.js'
 import { withSyncLeader } from './leader.js'
 import { mergeRemote } from './merge.js'
+import { readJson, writeJson } from './kvJson.js'
 import { EMPTY_OUTBOX, ackBatch, enqueueChange, outboxSize, takeBatch } from './outbox.js'
 
 export const SYNC_KEYS = Object.freeze({
@@ -22,25 +23,6 @@ const EMPTY_META = Object.freeze({
   forceReplace: false,
 })
 const ABORTED = Object.freeze({ ok: false, code: 'ABORTED' })
-
-const readJson = (kv, key, fallback) => {
-  try {
-    const raw = kv?.getItem(key)
-    return raw ? JSON.parse(raw) : fallback
-  } catch (error) {
-    console.error('동기화 정보를 읽지 못했습니다:', error)
-    return fallback
-  }
-}
-
-const writeJson = (kv, key, value) => {
-  try {
-    if (value === null) kv?.removeItem(key)
-    else kv?.setItem(key, JSON.stringify(value))
-  } catch (error) {
-    console.error('동기화 정보를 저장하지 못했습니다:', error)
-  }
-}
 
 const allEntities = (state) => ({ parts: state.parts, transactions: state.transactions })
 

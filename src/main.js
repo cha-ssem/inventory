@@ -4,6 +4,7 @@ import { createStore } from './data/store.js'
 import { isValidInspectionState } from './domain/inspection/validation.js'
 import { createSyncClient } from './sync/client.js'
 import { SYNC_KEYS, createSyncEngine } from './sync/engine.js'
+import { createInspectionChannel } from './sync/inspectionChannel.js'
 import { closeActiveModal, toast } from './ui/feedback.js'
 import { renderSyncBadge } from './ui/components/syncBadge.js'
 import { renderDashboard } from './ui/views/dashboard.js'
@@ -58,9 +59,19 @@ const start = () => {
     storage: createStorage(backend),
     onLocalChange: (change) => engineRef.sync?.recordLocalChange(change),
   })
-  const inspection = createInspectionStore({ storage: createStorage(backend, INSPECTION_STORAGE_KEY, isValidInspectionState) })
-  const sync = createSyncEngine({ store, kv: backend, createClient: (config) => createSyncClient(config) })
-  engineRef.sync = sync
+  const inspection = createInspectionStore({
+    storage: createStorage(backend, INSPECTION_STORAGE_KEY, isValidInspectionState),
+    onLocalChange: (change) => engineRef.inspectionChannel?.recordLocalChange(change),
+  })
+  // 점검 데이터는 입출고와 같은 구글 시트 연결로, 입출고 다음에 동기화한다
+  const inspectionChannel = createInspectionChannel({
+    store: inspection,
+    kv: backend,
+    isConnected: () => Boolean(engineRef.sync?.getConfig()),
+    requestSync: () => engineRef.sync?.requestSync(),
+  })
+  const sync = createSyncEngine({ store, kv: backend, createClient: (config) => createSyncClient(config), channels: [inspectionChannel] })
+  Object.assign(engineRef, { sync, inspectionChannel })
   const app = document.getElementById('app')
   let cleanup = null
 
@@ -87,7 +98,7 @@ const start = () => {
   window.addEventListener('storage', (event) => {
     if (event.key === STORAGE_KEY || event.key === null) store.reload()
     if (event.key === INSPECTION_STORAGE_KEY || event.key === null) inspection.reload()
-    if (Object.values(SYNC_KEYS).includes(event.key)) renderSyncBadge(sync.getStatus())
+    if ([...Object.values(SYNC_KEYS), ...sync.channelKeys()].includes(event.key)) renderSyncBadge(sync.getStatus())
   })
   render()
   sync.subscribe(renderSyncBadge)

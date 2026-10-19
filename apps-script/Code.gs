@@ -1,6 +1,6 @@
 /**
  * 부품 입출고관리 - 구글 시트 연동 서버 (2단계)
- * 설치: 구글 시트 → 확장 프로그램 → Apps Script에 이 폴더의 파일(Code, Logic, Ocr, OcrLogic)을 붙여넣고 setup()을 한 번 실행한 뒤 웹 앱으로 배포한다.
+ * 설치: 구글 시트 → 확장 프로그램 → Apps Script에 이 폴더의 파일(Code, Logic, Ocr, OcrLogic, Inspection, InspectionLogic)을 붙여넣고 setup()을 한 번 실행한 뒤 웹 앱으로 배포한다.
  * 모든 요청은 POST(본문 JSON)이며, 연결 토큰(스크립트 속성 APP_TOKEN)이 맞아야 처리한다.
  */
 
@@ -9,7 +9,7 @@ var SHEET_PARTS = 'parts'
 var REPLACE_LIMIT = 20000
 var LOCK_WAIT_MS = 20000
 var NUMBER_COLUMNS = { qty: true, safetyStock: true }
-var WRITE_ACTIONS = { push: true, replaceAll: true, saveMappings: true }
+var WRITE_ACTIONS = { push: true, replaceAll: true, saveMappings: true, inspPush: true }
 
 function doGet() {
   return jsonOutput({ ok: true, app: 'samkwang-inventory', message: '이 주소는 입출고관리 앱 전용입니다. 요청은 POST로 보내세요.' })
@@ -35,11 +35,11 @@ function handleRequest(body) {
 
   var handlers = {
     ping: handlePing, pull: handlePull, push: handlePush, replaceAll: handleReplaceAll,
-    ocr: handleOcr, saveMappings: handleSaveMappings,
+    ocr: handleOcr, saveMappings: handleSaveMappings, inspPush: handleInspPush, inspPull: handleInspPull,
   }
   var action = request.value.action
   var handler = handlers[action]
-  if (!handler) return fail('BAD_REQUEST', '알 수 없는 요청입니다.')
+  if (!handler) return fail('UNKNOWN_ACTION', '알 수 없는 요청입니다. Apps Script를 최신 버전으로 다시 배포하세요.')
 
   // 쓰기만 한 번에 하나씩 처리한다. 읽기와 서류 읽기(ocr, 오래 걸림)는 잠금 없이 처리해서 다른 기기가 기다리지 않는다.
   var lock = WRITE_ACTIONS[action] ? LockService.getScriptLock() : null
@@ -223,6 +223,7 @@ function setup() {
   getSheet(SHEET_PARTS, PART_COLUMNS)
   getSheet(SHEET_TX, TX_COLUMNS)
   getSheet(SHEET_MAPPINGS, MAPPING_COLUMNS)
+  setupInspectionSheets()
   var props = PropertiesService.getScriptProperties()
   if (!props.getProperty('APP_TOKEN')) props.setProperty('APP_TOKEN', Utilities.getUuid().replace(/-/g, ''))
   getDataVersion(props)

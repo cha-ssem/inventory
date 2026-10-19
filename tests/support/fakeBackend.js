@@ -9,7 +9,7 @@ export const FAKE_TOKEN = 'e2etoken0123456789'
 const loadLogic = () => {
   const here = dirname(fileURLToPath(import.meta.url))
   const gs = vm.createContext({})
-  for (const file of ['Logic.gs', 'OcrLogic.gs']) vm.runInContext(readFileSync(resolve(here, '../../apps-script', file), 'utf-8'), gs)
+  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs']) vm.runInContext(readFileSync(resolve(here, '../../apps-script', file), 'utf-8'), gs)
   return gs
 }
 
@@ -17,7 +17,9 @@ const loadLogic = () => {
 export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
   const gs = loadLogic()
   // ocrResult: ocr 요청에 돌려줄 AI 결과(명세서) 또는 { ok: false, ... } 오류. mappings: 대응표 시트
-  const db = { parts: [], transactions: [], version: 'v1', revision: 0, online: true, hooks: {}, requests: [], ocrResult: null, ocrFiles: [], mappings: [] }
+  const db = { parts: [], transactions: [], version: 'v1', revision: 0, online: true, hooks: {}, requests: [], ocrResult: null, ocrFiles: [], mappings: [],
+    // 현장점검 시트. inspectionSupported=false면 점검 기능이 없던 예전 배포처럼 응답한다
+    sites: [], robots: [], events: [], inspectionSupported: true }
   const lastRowId = () => db.transactions.at(-1)?.id ?? null
 
   const handlers = {
@@ -60,6 +62,24 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
       })
       return { ok: true, saved: plan.upserts.length, rejected: plan.rejected }
     },
+    inspPush: (req) => {
+      const plan = gs.planInspectionPush({ sites: db.sites, robots: db.robots, eventIds: db.events.map((e) => e.id) }, req)
+      const upsert = (list, upserts) =>
+        upserts.reduce((acc, u) => (u.rowIndex === null ? [...acc, u.item] : acc.map((x, i) => (i === u.rowIndex ? u.item : x))), list)
+      db.sites = upsert(db.sites, plan.siteUpserts)
+      db.robots = upsert(db.robots, plan.robotUpserts)
+      db.events = [...db.events, ...plan.appendEvents]
+      return { ok: true, acceptedIds: plan.acceptedIds, duplicateIds: plan.duplicateIds, rejected: plan.rejected, rejectedMasters: plan.rejectedMasters, total: db.events.length }
+    },
+    inspPull: (req) => {
+      const offset = Number(req.offset) || 0
+      const full = gs.needsFullEventPull(offset, req.lastRowId, offset > 0 ? db.events[offset - 1]?.id ?? null : null)
+      const valid = gs.filterValidEvents(db.events.slice(full ? 0 : offset))
+      return {
+        ok: true, full, sites: db.sites, robots: db.robots, events: valid.events, invalidCount: valid.invalidCount,
+        total: db.events.length, lastRowId: db.events.at(-1)?.id ?? null,
+      }
+    },
     replaceAll: (req) => {
       const allowed = gs.checkReplaceAllowed(req, db.revision)
       if (!allowed.ok) return allowed
@@ -75,7 +95,11 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
     const req = JSON.parse(body)
     db.requests.push(req.action)
     if (!gs.checkToken(req.token, token)) return { ok: false, code: 'UNAUTHORIZED', error: '연결 토큰이 맞지 않습니다.' }
-    return handlers[req.action](req)
+    const isInspection = req.action === 'inspPush' || req.action === 'inspPull'
+    if (isInspection && !db.inspectionSupported) return { ok: false, code: 'BAD_REQUEST', error: '알 수 없는 요청입니다.' }
+    const handler = handlers[req.action]
+    if (!handler) return { ok: false, code: 'UNKNOWN_ACTION', error: '알 수 없는 요청입니다.' }
+    return handler(req)
   }
 
   // 단위 테스트용 fetch 대체. hooks[action]으로 응답 전에 끼어들 수 있다 (지연·동시 변경 재현).
