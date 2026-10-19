@@ -1,0 +1,239 @@
+/* 점검 보고서 (확장 기능) */
+.badge-rp-DRAFT {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.badge-rp-FINALIZED {
+  background: var(--yp-soft);
+  color: var(--yp-strong);
+}
+
+.badge-rp-SUBMITTED {
+  background: var(--in-soft);
+  color: var(--in);
+}
+
+.site-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.site-checks legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+/* 초안: 왼쪽 편집, 오른쪽 미리 보기 */
+.report-layout {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.report-layout.is-draft {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+}
+
+.report-layout > .panel {
+  margin: 0;
+}
+
+.report-preview {
+  min-width: 0;
+}
+
+.page-head .actions .badge {
+  align-self: center;
+  white-space: nowrap;
+}
+
+/* 보고서 한 장 (화면에서는 종이처럼, 인쇄하면 A4) */
+.report-sheet {
+  background: #fff;
+  color: #111;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1.5rem 1.6rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.rs-head {
+  border-bottom: 2px solid var(--yp);
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.rs-head h2 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.rs-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem 1rem;
+  margin: 0;
+}
+
+.rs-meta div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rs-meta dt {
+  color: #555;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.rs-meta dd {
+  margin: 0;
+}
+
+.rs-stats {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  border: 1px solid #ccd;
+  border-radius: 6px;
+  margin-bottom: 0.9rem;
+}
+
+.rs-stat {
+  text-align: center;
+  padding: 0.4rem 0.2rem;
+  border-left: 1px solid #ccd;
+}
+
+.rs-stat:first-child {
+  border-left: none;
+}
+
+.rs-stat-label {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.rs-stat-value {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.rs-section {
+  margin-bottom: 0.9rem;
+  break-inside: avoid;
+}
+
+.rs-section h3 {
+  font-size: 0.98rem;
+  margin: 0 0 0.35rem;
+  padding-left: 0.5rem;
+  border-left: 3px solid var(--yp);
+}
+
+.rs-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.rs-empty {
+  margin: 0;
+  color: #666;
+}
+
+.rs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.rs-table th,
+.rs-table td {
+  border: 1px solid #ccd;
+  padding: 0.25rem 0.35rem;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.rs-table .nowrap {
+  white-space: normal;
+}
+
+.rs-table th {
+  background: #eef4f5;
+}
+
+.rs-table tr {
+  break-inside: avoid;
+}
+
+@media (max-width: 960px) {
+  .report-layout.is-draft {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .report-sheet {
+    padding: 1rem;
+  }
+
+  .rs-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .rs-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .rs-stat:nth-child(5) {
+    border-left: none;
+  }
+
+  .rs-stat:nth-child(n + 5) {
+    border-top: 1px solid #ccd;
+  }
+
+  .rs-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media print {
+  .rs-table .nowrap {
+    white-space: nowrap;
+  }
+
+  .report-layout {
+    display: block;
+  }
+
+  .report-sheet {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    font-size: 11px;
+  }
+
+  .rs-stats {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  .rs-head,
+  .rs-section h3,
+  .rs-table th {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

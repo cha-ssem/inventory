@@ -106,7 +106,7 @@ test('확장 메뉴·화면·부품은 기존 입출고와 구별해서 보이�
   await loadInspectionSample(page)
   await expect(page.locator('.app-nav')).not.toContainText('영풍')
   await expect(page.locator('body')).not.toContainText('영풍')
-  await expect(page.locator('.app-nav a.nav-yp')).toHaveText(['현장점검', '모니터링'])
+  await expect(page.locator('.app-nav a.nav-yp')).toHaveText(['현장점검', '모니터링', '보고서'])
   await expect(page.locator('.yp-panel .section-tag')).toBeVisible()
 
   await page.goto('/#/inspections')

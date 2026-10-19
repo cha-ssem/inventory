@@ -1,4 +1,5 @@
 import { INSPECTION_STORAGE_KEY, createInspectionStore } from './data/inspectionStore.js'
+import { REPORT_STORAGE_KEY, createReportStore, isValidReportState } from './data/reportStore.js'
 import { STORAGE_KEY, createStorage, getBrowserStorageBackend } from './data/storage.js'
 import { createStore } from './data/store.js'
 import { isValidInspectionState, normalizeInspectionState } from './domain/inspection/validation.js'
@@ -13,6 +14,8 @@ import { renderInspectionDetail } from './ui/views/inspectionDetail.js'
 import { renderInspections } from './ui/views/inspectionsView.js'
 import { renderLabels } from './ui/views/labelsView.js'
 import { renderMonitor } from './ui/views/monitorView.js'
+import { renderReportEditor } from './ui/views/reportEditor.js'
+import { renderReports } from './ui/views/reportsView.js'
 import { renderOcrInbound } from './ui/views/ocrView.js'
 import { renderParts } from './ui/views/partsView.js'
 import { createScanView } from './ui/views/scanView.js'
@@ -31,13 +34,15 @@ const routes = {
   '/inspections': renderInspections,
   '/inspection': renderInspectionDetail,
   '/monitor': renderMonitor,
+  '/reports': renderReports,
+  '/report': renderReportEditor,
   '/settings': renderSettings,
 }
 
-const NAV_PARENT = { '/labels': '/parts', '/inbound-ocr': '/inbound', '/inspection': '/inspections' }
+const NAV_PARENT = { '/labels': '/parts', '/inbound-ocr': '/inbound', '/inspection': '/inspections', '/report': '/reports' }
 
 // 확장 화면(현장점검·모니터링): 강조 색을 바꿔 기존 입출고 화면과 구별한다 (styles/inspection.css)
-const YOUNGPOONG_ROUTES = new Set(['/inspections', '/inspection', '/monitor'])
+const YOUNGPOONG_ROUTES = new Set(['/inspections', '/inspection', '/monitor', '/reports', '/report'])
 
 const parseHash = () => {
   const [path, search = ''] = (window.location.hash.slice(1) || '/').split('?')
@@ -75,6 +80,7 @@ const start = () => {
     isConnected: () => Boolean(engineRef.sync?.getConfig()),
     requestSync: () => engineRef.sync?.requestSync(),
   })
+  const reports = createReportStore({ storage: createStorage(backend, REPORT_STORAGE_KEY, isValidReportState) })
   const sync = createSyncEngine({ store, kv: backend, createClient: (config) => createSyncClient(config), channels: [inspectionChannel] })
   Object.assign(engineRef, { sync, inspectionChannel })
   const app = document.getElementById('app')
@@ -90,7 +96,7 @@ const start = () => {
     highlightNav(path)
     document.body.dataset.section = YOUNGPOONG_ROUTES.has(path) ? 'youngpoong' : 'inventory'
     try {
-      cleanup = routes[path](view, { store, inspection, sync, query, navigate }) || null
+      cleanup = routes[path](view, { store, inspection, reports, sync, query, navigate }) || null
     } catch (error) {
       console.error('화면을 그리지 못했습니다:', error)
       view.textContent = '화면을 표시하는 중 문제가 생겼습니다. 새로고침해 주세요.'
@@ -104,6 +110,7 @@ const start = () => {
   window.addEventListener('storage', (event) => {
     if (event.key === STORAGE_KEY || event.key === null) store.reload()
     if (event.key === INSPECTION_STORAGE_KEY || event.key === null) inspection.reload()
+    if (event.key === REPORT_STORAGE_KEY || event.key === null) reports.reload()
     if ([...Object.values(SYNC_KEYS), ...sync.channelKeys()].includes(event.key)) renderSyncBadge(sync.getStatus())
   })
   render()
