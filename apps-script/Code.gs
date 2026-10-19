@@ -1,5 +1,5 @@
 /**
- * 부품 입출고관리 - 구글 시트 연동 서버 (2단계)
+ * 부품·점검 통합관리 - 구글 시트 연동 서버
  * 설치: 구글 시트 → 확장 프로그램 → Apps Script에 이 폴더의 파일(Code, Logic, Ocr, OcrLogic, Inspection, InspectionLogic, Report, ReportLogic, ReportSubmitLogic)을 붙여넣고 setup()을 한 번 실행한 뒤 웹 앱으로 배포한다.
  * 모든 요청은 POST(본문 JSON)이며, 연결 토큰(스크립트 속성 APP_TOKEN)이 맞아야 처리한다.
  */
@@ -13,7 +13,7 @@ var NUMBER_COLUMNS = { qty: true, safetyStock: true }
 var WRITE_ACTIONS = { push: true, replaceAll: true, saveMappings: true, inspPush: true }
 
 function doGet() {
-  return jsonOutput({ ok: true, app: 'samkwang-inventory', message: '이 주소는 입출고관리 앱 전용입니다. 요청은 POST로 보내세요.' })
+  return jsonOutput({ ok: true, app: 'samkwang-inventory', message: '이 주소는 부품·점검 통합관리 앱 전용입니다. 요청은 POST로 보내세요.' })
 }
 
 function doPost(e) {

@@ -69,7 +69,7 @@ export const renderSettings = (container, { store, inspection, sync }) => {
       if (await confirmReplace('전체 초기화', '모두 지우기')) notifyResult(store.resetAll(), '모든 데이터를 지웠습니다.')
     },
     backup: () => {
-      downloadFile(`입출고관리_백업_${toDateKey(new Date())}.json`, serializeBackup(store.getState(), new Date().toISOString()), 'application/json')
+      downloadFile(`부품점검통합관리_백업_${toDateKey(new Date())}.json`, serializeBackup(store.getState(), new Date().toISOString()), 'application/json')
       toast('백업 파일을 내려받았습니다.', 'success')
     },
   }

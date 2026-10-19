@@ -1,7 +1,7 @@
 {
   "name": "samkwang-inventory",
   "version": "1.0.0",
-  "description": "부품 입출고관리 웹페이지 (강의 시연용)",
+  "description": "부품·점검 통합관리 웹페이지 (강의 시연용)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
