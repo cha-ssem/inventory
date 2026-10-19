@@ -1,0 +1,226 @@
+/* 스캔 화면 */
+.scan-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.scan-box {
+  border-top: 6px solid var(--in);
+}
+
+.scan-box.is-out {
+  border-top-color: var(--out);
+}
+
+.scan-input {
+  width: 100%;
+  font-size: 1.6rem;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.8rem 1rem;
+  border: 3px solid var(--primary);
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.scan-input::placeholder {
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.scan-input:focus {
+  outline: 4px solid var(--primary-soft);
+}
+
+.scan-row {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.scan-row .scan-input {
+  flex: 1;
+}
+
+.btn-submit {
+  width: 100%;
+  min-height: 3.4rem;
+  margin-top: 0.75rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+
+.scan-box.is-out .btn-submit {
+  background: var(--out);
+  border-color: var(--out);
+}
+
+.scan-box.is-out .btn-submit:hover {
+  background: #93410f;
+}
+
+.scan-status {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.scan-status.is-active {
+  color: var(--in);
+  font-weight: 700;
+}
+
+.result-card {
+  margin: 0.5rem 0 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+}
+
+.result-card.is-success {
+  border-color: var(--in);
+  background: var(--in-soft);
+}
+
+.result-card.is-warning {
+  border-color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.result-card.is-error {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.result-card.is-pending {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.result-card .result-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.result-card .result-part {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-top: 0.25rem;
+}
+
+.result-card .result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.35rem;
+}
+
+.result-card .big {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.flash {
+  animation: flash 0.5s ease-out;
+}
+
+@keyframes flash {
+  from {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 6px rgb(31 95 191 / 25%);
+  }
+  to {
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+.session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.session-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.session-list li:last-child {
+  border-bottom: 0;
+}
+
+/* 막대 차트 */
+.bar-chart {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  align-items: end;
+  height: 180px;
+  padding-top: 0.5rem;
+}
+
+.bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 0.25rem;
+}
+
+.bar-pair {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+
+.bar {
+  width: 40%;
+  max-width: 22px;
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+}
+
+.bar.in {
+  background: var(--in);
+}
+
+.bar.out {
+  background: var(--out);
+}
+
+.bar-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.legend {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.legend i {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 3px;
+  margin-right: 0.3rem;
+  vertical-align: -1px;
+}

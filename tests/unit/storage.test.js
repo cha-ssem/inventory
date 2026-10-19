@@ -68,4 +68,14 @@ describe('createStorage', () => {
     expect(storage.clear()).toBe(true)
     expect(storage.load()).toBeNull()
   })
+
+  it('다른 데이터 묶음은 그에 맞는 검증 함수로 불러온다', () => {
+    const backend = memoryBackend()
+    const isSites = (data) => Array.isArray(data?.sites)
+    const storage = createStorage(backend, 'other:v1', isSites)
+    expect(storage.save({ sites: [] })).toBe(true)
+    expect(storage.load()).toEqual({ sites: [] })
+    backend.setItem('other:v1', JSON.stringify({ parts: [], transactions: [] }))
+    expect(storage.load()).toBeNull()
+  })
 })

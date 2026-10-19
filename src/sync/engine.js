@@ -48,8 +48,10 @@ const assertShape = (condition, what) => {
   if (!condition) throw new Error(`서버 응답 형식이 올바르지 않습니다 (${what}).`)
 }
 
-// 보낼 목록·연결 정보·진행 상태는 kv(localStorage)에 두어 새로고침하거나 다른 탭에서도 이어진다
-export const createSyncEngine = ({ store, kv, createClient, now = () => new Date().toISOString() }) => {
+// 보낼 목록·연결 정보·진행 상태는 kv(localStorage)에 두어 새로고침하거나 다른 탭에서도 이어진다.
+// channels: 입출고 외의 데이터 묶음(예: 현장점검). 같은 연결로 입출고 다음에 차례로 동기화한다.
+//   { name, keys, sync(client, isCurrent), pending(), onConnect(mode), reset() }
+export const createSyncEngine = ({ store, kv, createClient, now = () => new Date().toISOString(), channels = [] }) => {
   let status = { state: 'idle', message: '', lastSyncAt: null, rejected: [], conflict: false }
   let running = null
   let rerun = false
@@ -63,7 +65,11 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
   const saveOutbox = (box) => writeJson(kv, SYNC_KEYS.outbox, box)
   const saveMeta = (changes) => writeJson(kv, SYNC_KEYS.meta, { ...meta(), ...changes })
 
-  const getStatus = () => ({ ...status, connected: Boolean(config()), pending: outboxSize(outbox()) })
+  const channelPending = () => channels.reduce((sum, channel) => sum + channel.pending(), 0)
+  const getStatus = () => {
+    const connected = Boolean(config())
+    return { ...status, connected, pending: outboxSize(outbox()) + (connected ? channelPending() : 0) }
+  }
   const notify = () => listeners.forEach((listener) => listener(getStatus()))
   const setStatus = (changes) => {
     status = { ...status, ...changes }
@@ -79,6 +85,13 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     if (!timers) return
     clearTimeout(timers.debounce)
     timers.debounce = setTimeout(() => syncNow({ background: true }), DEBOUNCE_MS)
+  }
+
+  // 채널이 자기 데이터가 바뀌었다고 알릴 때 쓴다 (보낼 목록은 채널이 직접 관리)
+  const requestSync = () => {
+    if (!config()) return
+    notify()
+    scheduleSoon()
   }
 
   const recordLocalChange = (change) => {
@@ -181,11 +194,12 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     const client = createClient(current)
     setStatus({ state: 'syncing', message: '' })
     try {
-      const steps = [meta().pendingReplace ? replaceRemote : null, pushOutbox, pullRemote].filter(Boolean)
+      const channelSteps = channels.map((channel) => (c, current) => channel.sync(c, current))
+      const steps = [meta().pendingReplace ? replaceRemote : null, pushOutbox, pullRemote, ...channelSteps].filter(Boolean)
       let notice = ''
       for (const step of steps) {
         const result = await step(client, isCurrent)
-        if (result === ABORTED) return getStatus()
+        if (result?.code === ABORTED.code || !isCurrent()) return getStatus()
         if (!result.ok) {
           failWith(result)
           return getStatus()
@@ -244,6 +258,7 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     writeJson(kv, SYNC_KEYS.config, null)
     writeJson(kv, SYNC_KEYS.outbox, null)
     writeJson(kv, SYNC_KEYS.meta, null)
+    channels.forEach((channel) => channel.reset())
     setStatus({ state: 'idle', message: '', rejected: [], conflict: false })
   }
 
@@ -255,6 +270,7 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     writeJson(kv, SYNC_KEYS.config, validateSyncConfig(input).value)
     saveOutbox(mode === 'merge' ? allEntities(store.getState()) : EMPTY_OUTBOX)
     writeJson(kv, SYNC_KEYS.meta, { ...EMPTY_META, pendingReplace: mode === 'upload', forceReplace: mode === 'upload' })
+    channels.forEach((channel) => channel.onConnect(mode))
     const result = await syncNow()
     if (result.state === 'ok') return { ok: true }
     const error = result.message
@@ -298,6 +314,8 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     getConfig: config,
     subscribe,
     recordLocalChange,
+    requestSync,
+    channelKeys: () => channels.flatMap((channel) => channel.keys),
     syncNow,
     testConnection,
     callServer,

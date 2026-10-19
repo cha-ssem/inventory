@@ -1,0 +1,100 @@
+/* 토스트 */
+.toasts {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: min(420px, calc(100vw - 2rem));
+}
+
+.toast {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #1d2a3a;
+  color: #fff;
+  box-shadow: var(--shadow);
+  font-weight: 600;
+}
+
+.toast-success {
+  background: var(--in);
+}
+
+.toast-error {
+  background: var(--danger);
+}
+
+.toast-warning {
+  background: #7a5400;
+}
+
+/* 모달 */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(10 20 35 / 50%);
+}
+
+.modal-dialog {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 25%);
+}
+
+.modal-dialog.modal-wide {
+  width: min(860px, 100%);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-head h2 {
+  font-size: 1.2rem;
+}
+
+.modal-body {
+  padding: 1.25rem;
+}
+
+.confirm-message {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.error-list {
+  max-height: 240px;
+  overflow: auto;
+  padding-left: 1.2rem;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+/* 카메라 */
+.camera-view {
+  width: 100%;
+  min-height: 260px;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
