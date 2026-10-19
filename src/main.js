@@ -8,6 +8,8 @@ import { closeActiveModal, toast } from './ui/feedback.js'
 import { renderSyncBadge } from './ui/components/syncBadge.js'
 import { renderDashboard } from './ui/views/dashboard.js'
 import { renderHistory } from './ui/views/historyView.js'
+import { renderInspectionDetail } from './ui/views/inspectionDetail.js'
+import { renderInspections } from './ui/views/inspectionsView.js'
 import { renderLabels } from './ui/views/labelsView.js'
 import { renderOcrInbound } from './ui/views/ocrView.js'
 import { renderParts } from './ui/views/partsView.js'
@@ -24,10 +26,12 @@ const routes = {
   '/history': renderHistory,
   '/parts': renderParts,
   '/labels': renderLabels,
+  '/inspections': renderInspections,
+  '/inspection': renderInspectionDetail,
   '/settings': renderSettings,
 }
 
-const NAV_PARENT = { '/labels': '/parts', '/inbound-ocr': '/inbound' }
+const NAV_PARENT = { '/labels': '/parts', '/inbound-ocr': '/inbound', '/inspection': '/inspections' }
 
 const parseHash = () => {
   const [path, search = ''] = (window.location.hash.slice(1) || '/').split('?')

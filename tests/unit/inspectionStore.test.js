@@ -84,3 +84,74 @@ describe('createInspectionStore', () => {
     expect(mergeFn).toHaveBeenCalledWith(latest)
   })
 })
+
+describe('점검 흐름 (createInspectionStore)', () => {
+  const makeStore = (onLocalChange = vi.fn()) => {
+    let n = 0
+    const storage = memoryStorage()
+    const store = createInspectionStore({ storage, now: () => NOW, makeId: () => `id-${++n}`, onLocalChange })
+    store.loadSample()
+    onLocalChange.mockClear()
+    return { store, storage, onLocalChange }
+  }
+  const input = { siteId: 'ST-01', robotId: 'RV-01', priority: 'MID', title: '수문 점검' }
+
+  it('점검 요청을 등록하면 이벤트를 저장하고 동기화에 그 이벤트만 알린다', () => {
+    const { store, onLocalChange } = makeStore()
+    const before = store.getState().events.length
+    const result = store.addRequest(input, '김수중')
+    expect(result.ok).toBe(true)
+    expect(store.getState().events).toHaveLength(before + 1)
+    expect(onLocalChange).toHaveBeenCalledWith({ events: [result.value] })
+    expect(store.getRequest(result.value.requestId)).toMatchObject({ status: 'REQUESTED', title: '수문 점검', requestedBy: '김수중' })
+  })
+
+  it('잘못된 요청은 저장하지 않는다', () => {
+    const { store, onLocalChange } = makeStore()
+    const before = store.getState()
+    expect(store.addRequest({ ...input, siteId: 'ST-99' }).ok).toBe(false)
+    expect(store.getState()).toBe(before)
+    expect(onLocalChange).not.toHaveBeenCalled()
+  })
+
+  it('transition: 배정 → 시작으로 상태를 바꾼다', () => {
+    const { store } = makeStore()
+    const { requestId } = store.addRequest(input).value
+    expect(store.transition(requestId, 'ASSIGN', { assignee: '이로봇' }, '김수중').ok).toBe(true)
+    expect(store.transition(requestId, 'START', {}).ok).toBe(true)
+    expect(store.getRequest(requestId).status).toBe('IN_PROGRESS')
+  })
+
+  it('transition: 할 수 없는 작업이면 이유를 돌려준다', () => {
+    const { store } = makeStore()
+    const { requestId } = store.addRequest(input).value
+    expect(store.transition(requestId, 'COMPLETE', { result: 'OK' })).toMatchObject({ ok: false })
+    expect(store.transition('R-none', 'START', {})).toMatchObject({ ok: false, error: '점검 요청을 찾을 수 없습니다.' })
+  })
+
+  it('checkTransition: 저장하지 않고 입력만 확인한다 (부품 출고 전에 쓰임)', () => {
+    const { store } = makeStore()
+    const { requestId } = store.addRequest(input).value
+    const before = store.getState()
+    expect(store.checkTransition(requestId, 'ASSIGN', { assignee: '' }).ok).toBe(false)
+    expect(store.checkTransition(requestId, 'ASSIGN', { assignee: '이로봇' })).toMatchObject({ ok: true })
+    expect(store.getState()).toBe(before)
+  })
+
+  it('listRequests: 거르기 조건으로 목록을 준다', () => {
+    const { store } = makeStore()
+    const open = store.listRequests({ status: 'open' })
+    expect(open.length).toBe(3)
+    expect(store.listRequests({ siteId: 'ST-05' }).every((r) => r.siteId === 'ST-05')).toBe(true)
+  })
+
+  it('다른 탭이 방금 저장한 이벤트를 지우지 않고 그 위에 더한다', () => {
+    const { store, storage } = makeStore()
+    const other = createInspectionStore({ storage, now: () => NOW, makeId: () => 'other-1' })
+    const fromOther = other.addRequest({ ...input, title: '다른 탭' }).value
+    const mine = store.addRequest(input).value
+    const ids = store.getState().events.map((e) => e.id)
+    expect(ids).toContain(fromOther.id)
+    expect(ids).toContain(mine.id)
+  })
+})

@@ -282,3 +282,51 @@ describe('addCatalog (다른 회사 부품 묶음 추가)', () => {
     expect(store.getState().transactions).toHaveLength(0)
   })
 })
+
+describe('recordOutboundBatch (점검에 쓴 부품 한 번에 출고)', () => {
+  const setup = () => {
+    let n = 0
+    const onLocalChange = vi.fn()
+    const store = createStore({ storage: fakeStorage(), now: () => NOW, makeId: () => `id-${++n}`, onLocalChange })
+    store.addPart({ partNo: 'YP-SP-001', name: '실링 키트', unit: 'SET', safetyStock: 2 })
+    store.addPart({ partNo: 'YP-RV-001', name: '추진기', unit: 'EA', safetyStock: 1 })
+    store.recordInbound({ partNo: 'YP-SP-001', qty: 3 })
+    store.recordInbound({ partNo: 'YP-RV-001', qty: 1 })
+    onLocalChange.mockClear()
+    return { store, onLocalChange }
+  }
+
+  it('모두 재고가 있으면 한 번에 출고하고 낮아진 품목을 알려 준다', () => {
+    const { store, onLocalChange } = setup()
+    const result = store.recordOutboundBatch([
+      { partNo: 'yp-sp-001', qty: 2, memo: '점검 R-1' },
+      { partNo: 'YP-RV-001', qty: 1, memo: '점검 R-1' },
+    ])
+    expect(result.ok).toBe(true)
+    expect(result.value).toHaveLength(2)
+    expect(result.low).toEqual(['YP-SP-001', 'YP-RV-001'])
+    expect(store.getStockMap().get('YP-SP-001')).toBe(1)
+    expect(onLocalChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('하나라도 재고가 모자라면 아무것도 출고하지 않는다', () => {
+    const { store } = setup()
+    const result = store.recordOutboundBatch([
+      { partNo: 'YP-SP-001', qty: 1 },
+      { partNo: 'YP-RV-001', qty: 2 },
+    ])
+    expect(result.ok).toBe(false)
+    expect(result.errors).toEqual([{ index: 1, error: expect.stringMatching(/재고/) }])
+    expect(store.getStockMap().get('YP-SP-001')).toBe(3)
+  })
+
+  it('등록되지 않은 부품이면 거부한다', () => {
+    const { store } = setup()
+    expect(store.recordOutboundBatch([{ partNo: 'NOPE', qty: 1 }])).toMatchObject({ ok: false, errors: [{ index: 0 }] })
+  })
+
+  it('빈 목록은 거부한다', () => {
+    const { store } = setup()
+    expect(store.recordOutboundBatch([])).toMatchObject({ ok: false })
+  })
+})

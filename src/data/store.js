@@ -144,6 +144,28 @@ export const createStore = ({ storage, now = () => new Date().toISOString(), mak
     return appendTransaction(result.value, { after: stockCheck.after, low: stockCheck.low })
   }
 
+  // 점검에 쓴 부품: 모두 재고가 있을 때만 한 번에 출고한다 (같은 품번이 여러 줄이면 앞 줄 수량을 빼고 계산)
+  const recordOutboundBatch = (inputs) => {
+    syncFromStorage()
+    if (!Array.isArray(inputs) || inputs.length === 0) return fail('출고할 부품이 없습니다.')
+    const stock = new Map(getStockMap())
+    const checked = inputs.map((input, index) => {
+      const part = requireActivePart(input.partNo)
+      if (!part.ok) return { index, error: part.error }
+      const result = createTransaction({ ...input, type: TX_TYPES.OUT }, { now: now(), makeId })
+      if (!result.ok) return { index, error: result.error }
+      const stockCheck = checkOutbound(stock, part.part.partNo, result.value.qty, part.part.safetyStock)
+      if (!stockCheck.ok) return { index, error: `${part.part.partNo}: ${stockCheck.error}` }
+      stock.set(part.part.partNo, stockCheck.after)
+      return { index, tx: result.value, low: stockCheck.low }
+    })
+    const errors = checked.filter((c) => c.error).map(({ index, error }) => ({ index, error }))
+    if (errors.length > 0) return fail(errors[0].error, { errors })
+    const txs = checked.map((c) => c.tx)
+    const low = checked.filter((c) => c.low).map((c) => c.tx.partNo)
+    return commit({ ...state, transactions: [...state.transactions, ...txs] }, { ok: true, value: txs, low }, { transactions: txs })
+  }
+
   const cancelTransaction = (id, { memo = '', worker = '' } = {}) => {
     syncFromStorage()
     const original = state.transactions.find((t) => t.id === id)
@@ -197,6 +219,7 @@ export const createStore = ({ storage, now = () => new Date().toISOString(), mak
     recordInbound,
     recordInboundBatch,
     recordOutbound,
+    recordOutboundBatch,
     cancelTransaction,
     addCatalog,
     loadSample,

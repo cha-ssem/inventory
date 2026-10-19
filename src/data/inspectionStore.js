@@ -1,3 +1,4 @@
+import { createRequestEvent, createTransitionEvent, foldRequests, listRequests as sortRequests } from '../domain/inspection/flow.js'
 import { generateInspectionSample } from './inspectionSample.js'
 
 export const INSPECTION_STORAGE_KEY = 'samkwang-inventory:inspection:v1'
@@ -13,9 +14,17 @@ const defaultMakeId = () =>
 // onLocalChange: 사용자가 바꾼 내용을 알린다 (동기화 채널의 보낼 목록에 쓰임)
 export const createInspectionStore = ({ storage, now = () => new Date().toISOString(), makeId = defaultMakeId, onLocalChange = () => {} }) => {
   let state = storage.load() ?? EMPTY_INSPECTION
+  let foldCache = { events: null, map: new Map() }
   const listeners = new Set()
 
   const getState = () => state
+
+  const getRequests = () => {
+    if (foldCache.events !== state.events) foldCache = { events: state.events, map: foldRequests(state.events) }
+    return foldCache.map
+  }
+  const getRequest = (requestId) => getRequests().get(requestId)
+  const listRequests = (filters) => sortRequests(state.events, filters)
 
   // 다른 탭이 저장한 내용을 덮어쓰지 않도록, 바꾸기 직전에 저장소의 최신 상태를 읽는다
   const syncFromStorage = () => {
@@ -50,6 +59,28 @@ export const createInspectionStore = ({ storage, now = () => new Date().toISOStr
     return () => listeners.delete(listener)
   }
 
+  const appendEvent = (event) =>
+    commit({ ...state, events: [...state.events, event] }, { ok: true, value: event }, { events: [event] })
+
+  const context = (actor) => ({ now: now(), makeId, actor })
+
+  const addRequest = (input, actor = '') => {
+    syncFromStorage()
+    const result = createRequestEvent(input, state, context(actor))
+    return result.ok ? appendEvent(result.value) : result
+  }
+
+  // 저장하지 않고 입력만 확인한다 (완료 전에 부품 출고를 먼저 해야 할 때)
+  const checkTransition = (requestId, type, input, actor = '') => {
+    syncFromStorage()
+    return createTransitionEvent(getRequest(requestId), type, input, context(actor))
+  }
+
+  const transition = (requestId, type, input, actor = '') => {
+    const result = checkTransition(requestId, type, input, actor)
+    return result.ok ? appendEvent(result.value) : result
+  }
+
   const loadSample = () => commit(generateInspectionSample({ now: now() }), { ok: true }, REPLACED)
 
   const resetAll = () => {
@@ -59,9 +90,14 @@ export const createInspectionStore = ({ storage, now = () => new Date().toISOStr
 
   return {
     getState,
+    getRequest,
+    listRequests,
     subscribe,
     reload,
     applyRemote,
+    addRequest,
+    checkTransition,
+    transition,
     loadSample,
     resetAll,
   }

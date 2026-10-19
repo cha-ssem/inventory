@@ -4,6 +4,7 @@ import { ROBOT_PARTS } from '../../src/data/youngpoongCatalog.js'
 import { isValidInspectionState } from '../../src/domain/inspection/validation.js'
 import { isValidPart, isValidTransaction } from '../../src/domain/backup.js'
 import { MODEL_METRICS, SECTORS } from '../../src/domain/inspection/constants.js'
+import { foldRequests } from '../../src/domain/inspection/flow.js'
 
 const NOW = '2026-10-19T09:00:00.000Z'
 
@@ -48,6 +49,15 @@ describe('generateInspectionSample', () => {
     const times = sample.events.map((e) => e.at)
     expect([...times].sort()).toEqual(times)
     expect(times.every((t) => t <= NOW)).toBe(true)
+  })
+
+  it('모든 이벤트가 흐름 규칙에 맞아서 버려지는 것이 없다', () => {
+    const requests = foldRequests(sample.events)
+    const kept = [...requests.values()].reduce((sum, r) => sum + r.history.length, 0)
+    expect(kept).toBe(sample.events.length)
+    const statuses = [...requests.values()].map((r) => r.status)
+    expect(statuses.filter((s) => s === 'COMPLETED')).toHaveLength(7)
+    expect(new Set(statuses)).toEqual(new Set(['COMPLETED', 'REQUESTED', 'ASSIGNED', 'IN_PROGRESS', 'CANCELLED']))
   })
 
   it('같은 시각이면 늘 같은 데이터를 만든다 (기기끼리 ID가 겹쳐도 같은 내용)', () => {

@@ -1,0 +1,156 @@
+/* 현장점검 (영풍산업) */
+
+/* 주 메뉴에서 점검 탭 묶음을 입출고 탭과 구분한다 */
+.app-nav a.nav-group-start {
+  margin-left: 0.75rem;
+  border-left: 1px solid rgb(255 255 255 / 18%);
+}
+
+/* 상태 배지 */
+.badge-st-REQUESTED {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.badge-st-ASSIGNED {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.badge-st-IN_PROGRESS {
+  background: var(--primary);
+  color: #fff;
+}
+
+.badge-st-COMPLETED {
+  background: var(--in-soft);
+  color: var(--in);
+}
+
+/* 우선순위 배지 */
+.badge-pr-HIGH {
+  background: var(--danger);
+  color: #fff;
+}
+
+.badge-pr-MID {
+  background: var(--out-soft);
+  color: var(--out);
+}
+
+/* 점검 결과 배지 */
+.badge-rs-OK {
+  background: var(--in-soft);
+  color: var(--in);
+}
+
+.badge-rs-ISSUE {
+  background: var(--out-soft);
+  color: var(--out);
+}
+
+.badge-rs-FAIL {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.inspection-table tr.clickable {
+  cursor: pointer;
+}
+
+.inspection-table tr.clickable:hover {
+  background: var(--surface-2);
+}
+
+.inspection-table .nowrap {
+  white-space: nowrap;
+}
+
+/* 상세 화면 */
+.detail-list {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.detail-list dt {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.detail-list dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pre {
+  white-space: pre-wrap;
+}
+
+ul.plain {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.timeline li {
+  padding: 0.3rem 0;
+}
+
+.timeline .when {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+/* 점검 완료: 사용 부품 */
+.used-parts {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.used-parts legend {
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+.used-part-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5rem auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.field-error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.field-error:empty {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .detail-list {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .detail-list dd {
+    margin-bottom: 0.5rem;
+  }
+
+  .app-nav a.nav-group-start {
+    margin-left: 0.25rem;
+  }
+}
