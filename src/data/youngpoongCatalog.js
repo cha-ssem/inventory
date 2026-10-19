@@ -1,4 +1,4 @@
-// 영풍산업 수중 점검 로봇 시연용 가상 데이터. 현장·발주처 이름은 실제가 아니다.
+// 수중 점검 로봇 시연용 가상 데이터. 현장·발주처 이름은 실제가 아니다.
 
 export const SAMPLE_SITES = [
   { siteId: 'ST-01', name: '청솔댐 취수탑', sector: 'DAM', region: '경남 밀양', contact: '정댐관' },
@@ -21,7 +21,7 @@ export const SAMPLE_ROBOTS = [
   { robotId: 'RV-06', model: 'V4', name: 'V4 로봇팔 1호기', serial: 'V4-2501', siteId: null },
 ]
 
-// 기존 입출고 데이터에 더하는 로봇 부품 (YP-RV: 모듈, YP-SP: 소모품). 화면에서 이 접두어로 영풍산업 부품을 구별한다.
+// 기존 입출고 데이터에 더하는 로봇 부품 (YP-RV: 모듈, YP-SP: 소모품). 화면에서 이 접두어로 로봇 부품을 구별한다.
 export const ROBOT_PART_PREFIX = 'YP-'
 
 export const ROBOT_PARTS = [

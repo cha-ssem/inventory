@@ -1,5 +1,5 @@
 /**
- * 현장점검(영풍산업) 동기화의 순수 로직 (Google API를 쓰지 않음). 단위 테스트: tests/unit/inspectionServer.test.js
+ * 현장점검(수중 점검 로봇) 동기화의 순수 로직 (Google API를 쓰지 않음). 단위 테스트: tests/unit/inspectionServer.test.js
  * Logic.gs의 cleanText·isDateString·toCell·fromTextCell·LIMITS를 함께 쓴다.
  */
 

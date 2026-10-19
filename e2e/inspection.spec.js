@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { loadInspectionSample, loadSample } from './helpers.js'
 
-test.describe('영풍산업 현장점검', () => {
+test.describe('현장점검 확장', () => {
   test('샘플을 불러오면 기존 입출고 데이터는 두고 로봇 부품과 재고만 더한다', async ({ page }) => {
     await loadSample(page)
     await loadInspectionSample(page)
@@ -98,13 +98,14 @@ test.describe('현장점검 흐름', () => {
 
   test('샘플이 없으면 설정으로 안내한다', async ({ page }) => {
     await page.goto('/#/inspections')
-    await expect(page.locator('.table-area')).toContainText('영풍산업 현장점검 샘플')
+    await expect(page.locator('.table-area')).toContainText('수중 점검 로봇 현장점검 샘플')
   })
 })
 
-test('영풍산업 확장 메뉴·화면·부품은 기존 입출고와 구별해서 보인다', async ({ page }) => {
+test('확장 메뉴·화면·부품은 기존 입출고와 구별해서 보이고 회사 이름은 쓰지 않는다', async ({ page }) => {
   await loadInspectionSample(page)
-  await expect(page.locator('.app-nav .nav-group-label')).toHaveText('영풍산업')
+  await expect(page.locator('.app-nav')).not.toContainText('영풍')
+  await expect(page.locator('body')).not.toContainText('영풍')
   await expect(page.locator('.app-nav a.nav-yp')).toHaveText(['현장점검', '모니터링'])
   await expect(page.locator('.yp-panel .section-tag')).toBeVisible()
 
@@ -117,5 +118,5 @@ test('영풍산업 확장 메뉴·화면·부품은 기존 입출고와 구별�
   await page.goto('/#/stock')
   await expect(page.locator('body')).toHaveAttribute('data-section', 'inventory')
   await expect(page.getByTestId('section-banner')).toHaveCount(0)
-  await expect(page.locator('tr[data-part-no="YP-RV-001"] .section-tag')).toHaveText('영풍')
+  await expect(page.locator('tr[data-part-no="YP-RV-001"] .section-tag')).toHaveText('로봇')
 })

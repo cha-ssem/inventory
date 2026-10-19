@@ -36,7 +36,7 @@ const routes = {
 
 const NAV_PARENT = { '/labels': '/parts', '/inbound-ocr': '/inbound', '/inspection': '/inspections' }
 
-// 영풍산업 확장 화면: 강조 색을 바꿔 기존 입출고 화면과 구별한다 (styles/inspection.css)
+// 확장 화면(현장점검·모니터링): 강조 색을 바꿔 기존 입출고 화면과 구별한다 (styles/inspection.css)
 const YOUNGPOONG_ROUTES = new Set(['/inspections', '/inspection', '/monitor'])
 
 const parseHash = () => {

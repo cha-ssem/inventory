@@ -1,6 +1,6 @@
-/* 현장점검 (영풍산업) */
+/* 현장점검 (확장 기능) */
 
-/* ── 영풍산업 확장 기능 구별 ──
+/* ── 확장 기능 구별 ──
    청록색을 확장 기능 전용 강조색으로 쓴다. 확장 화면에서는 버튼·링크 등 기본 강조색(--primary)도 청록색으로 바뀐다. */
 :root {
   --yp: #0e7c86;
@@ -15,16 +15,10 @@ body[data-section='youngpoong'] {
   --primary-soft: var(--yp-soft);
 }
 
-/* 주 메뉴: "영풍산업" 묶음 이름과 청록색 탭 */
-.app-nav .nav-group-label {
-  align-self: center;
+/* 주 메뉴: 구분선 뒤 청록색 탭 묶음 */
+.app-nav a.nav-group-start {
   margin-left: 0.75rem;
-  padding: 0.15rem 0.5rem 0.15rem 0.75rem;
   border-left: 1px solid rgb(255 255 255 / 25%);
-  color: var(--yp-nav);
-  font-size: 0.75rem;
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .app-nav a.nav-yp {
@@ -74,7 +68,7 @@ body[data-section='youngpoong'] {
   vertical-align: 1px;
 }
 
-/* 설정 화면의 영풍산업 샘플 칸 */
+/* 설정 화면의 현장점검 샘플 칸 */
 .yp-panel {
   border-color: var(--yp);
   border-left: 4px solid var(--yp);
@@ -224,7 +218,7 @@ ul.plain {
     margin-bottom: 0.5rem;
   }
 
-  .app-nav .nav-group-label {
+  .app-nav a.nav-group-start {
     margin-left: 0.25rem;
   }
 }

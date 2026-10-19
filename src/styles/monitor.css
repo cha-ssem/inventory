@@ -1,4 +1,4 @@
-/* 센서 모니터링 (영풍산업) */
+/* 센서 모니터링 (확장 기능) */
 .robot-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

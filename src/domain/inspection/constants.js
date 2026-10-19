@@ -1,4 +1,4 @@
-// 현장점검(영풍산업 수중 점검 로봇) 도메인의 고정 값
+// 현장점검(수중 점검 로봇) 도메인의 고정 값
 
 export const SECTORS = Object.freeze({
   DAM: '댐',

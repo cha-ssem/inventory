@@ -25,7 +25,7 @@ const feedView = (feed) =>
       </ul>`
 
 const noRobotsView = html`<div class="empty">
-  현장에 나가 있는 로봇이 없습니다. <a href="#/settings">설정 → 영풍산업 현장점검 샘플</a>에서 샘플을 불러오세요.
+  현장에 나가 있는 로봇이 없습니다. <a href="#/settings">설정 → 수중 점검 로봇 현장점검 샘플</a>에서 샘플을 불러오세요.
 </div>`
 
 export const renderMonitor = (container, { inspection, store }) => {

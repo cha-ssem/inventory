@@ -3,11 +3,11 @@ import { html } from './dom.js'
 
 const INSPECTOR_KEY = 'samkwang-inventory:inspector'
 
-// 영풍산업 확장 기능 화면 맨 위에 붙여 기존 입출고 화면과 구별한다
+// 확장 기능 화면 맨 위에 붙여 기존 입출고 화면과 구별한다
 export const sectionBanner = () =>
-  html`<p class="section-banner" data-testid="section-banner"><span class="section-tag">영풍산업 확장</span> 수중 점검 로봇(ROVINS) 현장점검 · 모니터링</p>`
+  html`<p class="section-banner" data-testid="section-banner"><span class="section-tag">확장 기능</span> 수중 점검 로봇(ROVINS) 현장점검 · 모니터링</p>`
 
-export const sectionTag = () => html`<span class="section-tag">영풍산업 확장</span>`
+export const sectionTag = () => html`<span class="section-tag">확장 기능</span>`
 
 export const statusBadge = (status) => html`<span class="badge badge-st-${status}">${STATUSES[status] ?? status}</span>`
 

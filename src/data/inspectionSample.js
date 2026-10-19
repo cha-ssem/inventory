@@ -129,7 +129,7 @@ export const generateRobotStock = ({ now = new Date().toISOString() } = {}) => {
   const parts = ROBOT_PARTS.map((p) => createPart(p, openingAt))
   const openings = parts.map((p, i) => ({
     id: `YP-OPEN-${pad(i + 1)}`, type: 'IN', partNo: p.partNo, qty: p.safetyStock * OPENING_MULTIPLIER,
-    partner: '영풍산업 본사 자재', worker: KIM, memo: '로봇 부품 초기 재고', refId: null, createdAt: openingAt,
+    partner: '본사 자재', worker: KIM, memo: '로봇 부품 초기 재고', refId: null, createdAt: openingAt,
   }))
   const used = generateInspectionSample({ now }).events.filter((e) => e.type === 'COMPLETE')
   const outs = used.flatMap((e) =>

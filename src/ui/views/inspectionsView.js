@@ -49,7 +49,7 @@ const requestTable = (requests, { sites, robots }) => {
 }
 
 const NO_DATA = html`<div class="empty">
-  등록된 현장이 없습니다. <a href="#/settings">설정 → 영풍산업 현장점검 샘플</a>에서 샘플을 불러오세요.
+  등록된 현장이 없습니다. <a href="#/settings">설정 → 수중 점검 로봇 현장점검 샘플</a>에서 샘플을 불러오세요.
 </div>`
 
 const siteOptions = (sites, selected) => html`${option('', '전체 현장', selected)}${sites.map((s) => option(s.siteId, s.name, selected))}`

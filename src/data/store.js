@@ -178,7 +178,7 @@ export const createStore = ({ storage, now = () => new Date().toISOString(), mak
     return appendTransaction(result.value, {})
   }
 
-  // 다른 회사 부품 묶음(예: 영풍산업 로봇 부품)을 더한다. 이미 있는 품번과 그 기록, 이미 있는 기록 ID는 건너뛴다.
+  // 다른 회사 부품 묶음(예: 수중 점검 로봇 부품)을 더한다. 이미 있는 품번과 그 기록, 이미 있는 기록 ID는 건너뛴다.
   const addCatalog = ({ parts = [], transactions = [] }) => {
     syncFromStorage()
     const existingNos = new Set(state.parts.map((p) => p.partNo))
