@@ -92,3 +92,9 @@ export const reviseReport = (report, { now, makeId, author = '' }) => {
     value: { ...rest, reportId: makeId(), version: report.version + 1, supersedes: report.reportId, status: 'DRAFT', author: cleanText(author), createdAt: now, updatedAt: now },
   }
 }
+
+// 7단계 제출 결과를 남긴다. 제출 완료 보고서는 메일 상태만 다시 고칠 수 있다 (메일 다시 보내기).
+export const markSubmitted = (report, { submittedAt, mailStatus, recipients = 0 }, now) => {
+  if (report.status !== 'FINALIZED' && report.status !== 'SUBMITTED') return fail('확정한 보고서만 제출할 수 있습니다.')
+  return { ok: true, value: { ...report, status: 'SUBMITTED', submission: { submittedAt, mailStatus, recipients }, updatedAt: now } }
+}

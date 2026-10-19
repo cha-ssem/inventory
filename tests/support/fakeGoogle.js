@@ -45,7 +45,9 @@ const createSheet = () => {
 }
 
 // Apps Script 서버 파일(Code·Logic·Ocr·OcrLogic)을 가짜 Google 서비스 위에서 실행한다
-export const loadAppsScript = ({ properties = {}, fetchResponse } = {}) => {
+// mail: { quota, throws, user } 메일 발송 흉내. 보낸 메일은 mails에 쌓인다.
+export const loadAppsScript = ({ properties = {}, fetchResponse, mail = {} } = {}) => {
+  const mails = []
   const sheets = {}
   const props = { ...properties }
   const fetches = []
@@ -66,7 +68,21 @@ export const loadAppsScript = ({ properties = {}, fetchResponse } = {}) => {
     Utilities: {
       getUuid: () => 'uuid-1',
       formatDate: (date) => date.toISOString().slice(0, 10),
+      newBlob: (content, type, name) => ({
+        getAs: (as) => {
+          const blob = { content, type: as, name, setName: (n) => ({ ...blob, name: n }) }
+          return blob
+        },
+      }),
     },
+    MailApp: {
+      getRemainingDailyQuota: () => mail.quota ?? 100,
+      sendEmail: (message) => {
+        if (mail.throws) throw new Error(mail.throws)
+        mails.push(message)
+      },
+    },
+    Session: { getEffectiveUser: () => ({ getEmail: () => mail.user ?? 'owner@example.com' }) },
     SpreadsheetApp: {
       getActiveSpreadsheet: () => ({
         getName: () => '시험 시트',
@@ -91,9 +107,9 @@ export const loadAppsScript = ({ properties = {}, fetchResponse } = {}) => {
     },
   })
   const dir = resolve(dirname(fileURLToPath(import.meta.url)), '../../apps-script')
-  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs', 'ReportLogic.gs', 'Code.gs', 'Ocr.gs', 'Inspection.gs', 'Report.gs']) {
+  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs', 'ReportLogic.gs', 'ReportSubmitLogic.gs', 'Code.gs', 'Ocr.gs', 'Inspection.gs', 'Report.gs']) {
     vm.runInContext(readFileSync(resolve(dir, file), 'utf-8'), context)
   }
   const post = (body) => JSON.parse(context.doPost({ postData: { contents: JSON.stringify(body) } }).text)
-  return { context, sheets, props, fetches, logs, post }
+  return { context, sheets, props, fetches, logs, post, mails }
 }

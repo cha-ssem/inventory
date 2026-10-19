@@ -5,6 +5,15 @@ import { formatNumber, html } from '../dom.js'
 
 export const reportStatusBadge = (status) => html`<span class="badge badge-rp-${status}">${REPORT_STATUSES[status]}</span>`
 
+const MAIL_LABELS = { SENT: '메일 보냄', FAILED: '메일 못 보냄', QUOTA: '메일 한도 초과', PENDING: '메일 보내는 중' }
+
+const statusText = (report) => {
+  if (report.status === 'DRAFT') return '초안 (확정 전)'
+  if (report.status === 'FINALIZED') return `${REPORT_STATUSES.FINALIZED} · ${formatDateTime(report.finalizedAt)}`
+  const { submittedAt, mailStatus } = report.submission ?? {}
+  return `${REPORT_STATUSES.SUBMITTED} · ${formatDateTime(submittedAt)} · ${MAIL_LABELS[mailStatus] ?? ''}`
+}
+
 const statCell = (label, value) => html`<div class="rs-stat"><div class="rs-stat-label">${label}</div><div class="rs-stat-value">${formatNumber(value)}</div></div>`
 
 const partsText = (usedParts) => (usedParts.length === 0 ? '-' : usedParts.map((u) => `${u.partNo} ×${u.qty}`).join(', '))
@@ -55,7 +64,7 @@ const section = (key, text) => html`<section class="rs-section" data-section="${
 // A4 한 장(넘치면 여러 장)으로 인쇄되는 보고서. body를 따로 받는 것은 편집 중인 문장을 저장 전에 미리 보기 위해서다.
 export const reportSheet = (report, body = report.body) => {
   const { stats, completed, open } = report.snapshot
-  const status = report.status === 'DRAFT' ? '초안 (확정 전)' : `${REPORT_STATUSES[report.status]} · ${formatDateTime(report.finalizedAt)}`
+  const status = statusText(report)
   return html`<article class="report-sheet" data-testid="report-sheet">
     <header class="rs-head">
       <h2>${report.title}</h2>

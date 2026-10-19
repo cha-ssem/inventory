@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createDraft, defaultBody, finalizeReport, reviseReport, updateDraft, REPORT_LIMITS } from '../../src/domain/report/report.js'
+import { createDraft, defaultBody, finalizeReport, markSubmitted, reviseReport, updateDraft, REPORT_LIMITS } from '../../src/domain/report/report.js'
 
 const NOW = '2026-10-19T09:00:00.000Z'
 const LATER = '2026-10-19T10:00:00.000Z'
@@ -93,5 +93,30 @@ describe('updateDraft · finalizeReport · reviseReport', () => {
     expect(revised.value).toMatchObject({ reportId: 'new-id', version: 2, supersedes: final.reportId, status: 'DRAFT', body: final.body, snapshot: final.snapshot, author: '이로봇' })
     expect(revised.value.finalizedAt).toBeUndefined()
     expect(reviseReport(draft(), ctx).ok).toBe(false)
+  })
+})
+
+describe('markSubmitted', () => {
+  const finalized = () => finalizeReport(createDraft(input, snapshot, ctx).value, LATER).value
+
+  it('확정본을 제출 완료로 바꾸고 제출 결과(시각·메일 상태)를 남긴다', () => {
+    const result = markSubmitted(finalized(), { submittedAt: LATER, mailStatus: 'SENT', recipients: 1 }, LATER)
+    expect(result.value).toMatchObject({ status: 'SUBMITTED', submission: { submittedAt: LATER, mailStatus: 'SENT', recipients: 1 } })
+  })
+
+  it('제출 완료 보고서는 메일 상태만 다시 고칠 수 있다 (메일 다시 보내기)', () => {
+    const failed = markSubmitted(finalized(), { submittedAt: LATER, mailStatus: 'FAILED', recipients: 1 }, LATER).value
+    expect(markSubmitted(failed, { submittedAt: LATER, mailStatus: 'SENT', recipients: 1 }, LATER).value.submission.mailStatus).toBe('SENT')
+  })
+
+  it('초안은 제출할 수 없다', () => {
+    expect(markSubmitted(createDraft(input, snapshot, ctx).value, { submittedAt: LATER, mailStatus: 'SENT' }, LATER)).toMatchObject({ ok: false, error: expect.stringMatching(/확정/) })
+  })
+
+  it('수정본을 만들면 제출 정보는 따라가지 않는다', () => {
+    const submitted = markSubmitted(finalized(), { submittedAt: LATER, mailStatus: 'SENT', recipients: 1 }, LATER).value
+    const revised = reviseReport(submitted, { now: LATER, makeId: () => 'v2', author: '' }).value
+    expect(revised.submission).toBeUndefined()
+    expect(revised.status).toBe('DRAFT')
   })
 })

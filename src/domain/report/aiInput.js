@@ -14,3 +14,14 @@ export const buildAiInput = ({ title, period, from, to, siteNames, snapshot }) =
   })),
   open: snapshot.open.map(({ siteName, title: t, priority, status, assignee, dueDate }) => ({ siteName, title: t, priority, status, assignee, dueDate })),
 })
+
+// 7단계 제출에 보낼 내용: AI 입력 내용 + 보고서 ID·버전·작성자·문장·확정 일시 (시트 기록과 메일·PDF에 쓰임)
+export const buildSubmission = (report) => ({
+  ...buildAiInput(report),
+  reportId: report.reportId,
+  version: report.version,
+  author: report.author,
+  aiUsed: report.aiUsed,
+  finalizedAt: report.finalizedAt,
+  body: report.body,
+})

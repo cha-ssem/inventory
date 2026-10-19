@@ -90,3 +90,14 @@ describe('isValidReportState', () => {
     expect(isValidReportState(null)).toBe(false)
   })
 })
+
+describe('markSubmitted (reportStore)', () => {
+  it('제출 결과를 저장한다', () => {
+    const { store } = makeStore()
+    store.create(input, snapshot)
+    store.update('rp-1', { summary: '요약' })
+    store.finalize('rp-1')
+    expect(store.markSubmitted('rp-1', { submittedAt: NOW, mailStatus: 'SENT', recipients: 1 }).value.status).toBe('SUBMITTED')
+    expect(store.markSubmitted('none', {}).ok).toBe(false)
+  })
+})

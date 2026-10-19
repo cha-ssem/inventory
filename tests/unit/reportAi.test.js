@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildAiInput, AI_DRAFT_TIMEOUT_MS } from '../../src/domain/report/aiInput.js'
+import { buildAiInput, buildSubmission, AI_DRAFT_TIMEOUT_MS } from '../../src/domain/report/aiInput.js'
 
 const report = {
   reportId: 'rp-1', title: '일간 점검 보고서 (2026-10-19)', period: 'DAILY', from: '2026-10-19', to: '2026-10-19',
@@ -26,5 +26,14 @@ describe('buildAiInput', () => {
 
   it('AI 요청은 오래 걸릴 수 있어 시간 제한을 넉넉히 둔다', () => {
     expect(AI_DRAFT_TIMEOUT_MS).toBeGreaterThanOrEqual(60_000)
+  })
+})
+
+describe('buildSubmission', () => {
+  it('AI 입력 내용에 보고서 ID·버전·작성자·문장·확정 일시를 더한다', () => {
+    const finalized = { ...report, version: 2, aiUsed: true, status: 'FINALIZED', finalizedAt: '2026-10-19T03:00:00.000Z', body: { summary: '요약', findings: 'f', actions: 'a', nextPlan: 'n' } }
+    expect(buildSubmission(finalized)).toEqual({
+      ...buildAiInput(finalized), reportId: 'rp-1', version: 2, author: '김수중', aiUsed: true, finalizedAt: '2026-10-19T03:00:00.000Z', body: finalized.body,
+    })
   })
 })

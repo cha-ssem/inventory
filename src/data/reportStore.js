@@ -1,4 +1,4 @@
-import { REPORT_STATUSES, createDraft, finalizeReport, reviseReport, updateDraft } from '../domain/report/report.js'
+import { REPORT_STATUSES, createDraft, finalizeReport, markSubmitted as markReportSubmitted, reviseReport, updateDraft } from '../domain/report/report.js'
 
 // 점검 보고서는 점검 동기화와 저장 키를 나눈다 (동기화가 보고서를 건드리지 않도록). 시트에는 7단계 제출 때 올린다.
 export const REPORT_STORAGE_KEY = 'samkwang-inventory:reports:v1'
@@ -58,6 +58,7 @@ export const createReportStore = ({ storage, now = () => new Date().toISOString(
   // extra: 문장 말고 함께 바꿀 값 (예: AI 초안 사용 여부)
   const update = (reportId, changes, extra) => modify(reportId, (r) => updateDraft(r, changes, now(), extra))
   const finalize = (reportId) => modify(reportId, (r) => finalizeReport(r, now()))
+  const markSubmitted = (reportId, submission) => modify(reportId, (r) => markReportSubmitted(r, submission, now()))
 
   const revise = (reportId, author = '') => {
     syncFromStorage()
@@ -85,5 +86,5 @@ export const createReportStore = ({ storage, now = () => new Date().toISOString(
     return () => listeners.delete(listener)
   }
 
-  return { get, list, create, update, finalize, revise, remove, reload, subscribe }
+  return { get, list, create, update, finalize, markSubmitted, revise, remove, reload, subscribe }
 }

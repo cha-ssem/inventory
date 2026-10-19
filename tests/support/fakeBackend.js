@@ -9,7 +9,7 @@ export const FAKE_TOKEN = 'e2etoken0123456789'
 const loadLogic = () => {
   const here = dirname(fileURLToPath(import.meta.url))
   const gs = vm.createContext({})
-  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs', 'ReportLogic.gs']) vm.runInContext(readFileSync(resolve(here, '../../apps-script', file), 'utf-8'), gs)
+  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs', 'ReportLogic.gs', 'ReportSubmitLogic.gs']) vm.runInContext(readFileSync(resolve(here, '../../apps-script', file), 'utf-8'), gs)
   return gs
 }
 
@@ -21,7 +21,9 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
     // 현장점검 시트. inspectionSupported=false면 점검 기능이 없던 예전 배포처럼 응답한다
     sites: [], robots: [], events: [], inspectionSupported: true,
     // reportResult: reportDraft 요청에 돌려줄 AI 문단 또는 { ok: false, ... } 오류. reportInputs: 받은 보고서 데이터
-    reportResult: null, reportInputs: [] }
+    reportResult: null, reportInputs: [],
+    // reports: 제출된 보고서 줄 { reportKey, submittedAt, mailStatus }, mails: 보낸 메일, mailFails: 메일 실패 흉내
+    reports: [], mails: [], mailFails: false }
   const lastRowId = () => db.transactions.at(-1)?.id ?? null
 
   const handlers = {
@@ -89,6 +91,24 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
       if (db.reportResult.ok === false) return db.reportResult
       db.reportInputs.push(input.value)
       return { ok: true, body: gs.sanitizeReportBody(db.reportResult) }
+    },
+    submitReport: (req) => {
+      const sub = gs.sanitizeSubmission(req.report)
+      if (!sub.ok) return sub
+      const plan = gs.planSubmission(db.reports, sub.value.key)
+      const submittedAt = plan.append ? new Date().toISOString() : db.reports[plan.rowIndex].submittedAt
+      if (plan.append) db.reports = [...db.reports, { reportKey: sub.value.key, submittedAt, mailStatus: 'PENDING' }]
+      const index = plan.append ? db.reports.length - 1 : plan.rowIndex
+      let mailStatus = db.reports[index].mailStatus
+      if (plan.sendMail) {
+        mailStatus = db.mailFails ? 'FAILED' : 'SENT'
+        if (!db.mailFails) db.mails = [...db.mails, { subject: gs.reportMailSubject(sub.value), html: gs.buildReportHtml(sub.value, submittedAt) }]
+        db.reports = db.reports.map((r, i) => (i === index ? { ...r, mailStatus } : r))
+      }
+      return {
+        ok: true, duplicate: !plan.append, submittedAt, mailStatus, recipients: 1,
+        ...(mailStatus === 'FAILED' ? { warning: '시트에는 기록했지만 메일을 보내지 못했습니다. 잠시 후 [메일 다시 보내기]를 누르세요.' } : {}),
+      }
     },
     replaceAll: (req) => {
       const allowed = gs.checkReplaceAllowed(req, db.revision)
