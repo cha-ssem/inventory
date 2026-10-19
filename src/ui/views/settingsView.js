@@ -3,6 +3,7 @@ import { toDateKey } from '../../domain/dates.js'
 import { downloadFile, formatNumber, html, qs, readFileAsText, setHtml } from '../dom.js'
 import { confirmDialog, notifyResult, toast } from '../feedback.js'
 import { mountSyncPanel } from '../components/syncPanel.js'
+import { mountInspectionSamplePanel } from '../components/inspectionSamplePanel.js'
 
 const MAX_BACKUP_BYTES = 10 * 1024 * 1024
 
@@ -10,7 +11,7 @@ const summary = (state) =>
   `부품 ${formatNumber(state.parts.length)}개 · 입출고 기록 ${formatNumber(state.transactions.length)}건`
 
 // 화면 뼈대는 한 번만 그리고, 데이터 요약만 다시 그린다 (연결 폼 입력값이 지워지지 않도록)
-export const renderSettings = (container, { store, sync }) => {
+export const renderSettings = (container, { store, inspection, sync }) => {
   const connected = () => sync?.getStatus().connected
   const storageNote = () =>
     connected()
@@ -36,6 +37,7 @@ export const renderSettings = (container, { store, sync }) => {
             <button type="button" class="btn btn-danger" data-action="reset">전체 초기화</button>
           </div>
         </section>
+        <section class="panel inspection-sample-slot"></section>
         <section class="panel">
           <div class="panel-head"><h2>백업과 복원</h2></div>
           <p>모든 데이터를 JSON 파일로 내려받거나, 내려받은 파일로 되돌립니다.</p>
@@ -98,7 +100,11 @@ export const renderSettings = (container, { store, sync }) => {
   const unsubscribeStore = store.subscribe(draw)
   const unsubscribeSync = sync ? mountSyncPanel(qs(container, '.sync-slot'), { store, sync }) : () => {}
   const unsubscribeNote = sync ? sync.subscribe(draw) : () => {}
+  const unsubscribeInspection = inspection
+    ? mountInspectionSamplePanel(qs(container, '.inspection-sample-slot'), { store, inspection, connected })
+    : () => {}
   return () => {
+    unsubscribeInspection()
     unsubscribeStore()
     unsubscribeSync()
     unsubscribeNote()

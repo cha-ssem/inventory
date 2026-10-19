@@ -1,5 +1,7 @@
+import { INSPECTION_STORAGE_KEY, createInspectionStore } from './data/inspectionStore.js'
 import { STORAGE_KEY, createStorage, getBrowserStorageBackend } from './data/storage.js'
 import { createStore } from './data/store.js'
+import { isValidInspectionState } from './domain/inspection/validation.js'
 import { createSyncClient } from './sync/client.js'
 import { SYNC_KEYS, createSyncEngine } from './sync/engine.js'
 import { closeActiveModal, toast } from './ui/feedback.js'
@@ -52,6 +54,7 @@ const start = () => {
     storage: createStorage(backend),
     onLocalChange: (change) => engineRef.sync?.recordLocalChange(change),
   })
+  const inspection = createInspectionStore({ storage: createStorage(backend, INSPECTION_STORAGE_KEY, isValidInspectionState) })
   const sync = createSyncEngine({ store, kv: backend, createClient: (config) => createSyncClient(config) })
   engineRef.sync = sync
   const app = document.getElementById('app')
@@ -66,7 +69,7 @@ const start = () => {
     app.replaceChildren(view)
     highlightNav(path)
     try {
-      cleanup = routes[path](view, { store, sync, query, navigate }) || null
+      cleanup = routes[path](view, { store, inspection, sync, query, navigate }) || null
     } catch (error) {
       console.error('화면을 그리지 못했습니다:', error)
       view.textContent = '화면을 표시하는 중 문제가 생겼습니다. 새로고침해 주세요.'
@@ -79,6 +82,7 @@ const start = () => {
   // 다른 탭에서 저장하면 이 탭의 화면도 최신 데이터로 다시 그린다
   window.addEventListener('storage', (event) => {
     if (event.key === STORAGE_KEY || event.key === null) store.reload()
+    if (event.key === INSPECTION_STORAGE_KEY || event.key === null) inspection.reload()
     if (Object.values(SYNC_KEYS).includes(event.key)) renderSyncBadge(sync.getStatus())
   })
   render()

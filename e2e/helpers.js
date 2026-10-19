@@ -40,3 +40,10 @@ export const registerPart = async (page, { partNo, name, safetyStock = '5' }) =>
   await dialog.getByRole('button', { name: '등록' }).click()
   await expect(page.getByTestId('parts-table')).toContainText(partNo)
 }
+
+export const loadInspectionSample = async (page) => {
+  await page.goto('/#/settings')
+  await page.getByRole('button', { name: '영풍산업 샘플 불러오기' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '불러오기' }).click()
+  await expect(page.getByTestId('inspection-summary')).toContainText('현장 8곳 · 로봇 6대')
+}

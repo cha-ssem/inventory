@@ -153,6 +153,22 @@ export const createStore = ({ storage, now = () => new Date().toISOString(), mak
     return appendTransaction(result.value, {})
   }
 
+  // 다른 회사 부품 묶음(예: 영풍산업 로봇 부품)을 더한다. 이미 있는 품번과 그 기록, 이미 있는 기록 ID는 건너뛴다.
+  const addCatalog = ({ parts = [], transactions = [] }) => {
+    syncFromStorage()
+    const existingNos = new Set(state.parts.map((p) => p.partNo))
+    const newParts = parts.filter((p) => !existingNos.has(p.partNo))
+    const newNos = new Set(newParts.map((p) => p.partNo))
+    const txIds = new Set(state.transactions.map((t) => t.id))
+    const newTx = transactions.filter((t) => newNos.has(t.partNo) && !txIds.has(t.id))
+    if (newParts.length === 0) return { ok: true, added: 0 }
+    return commit(
+      { parts: [...state.parts, ...newParts], transactions: [...state.transactions, ...newTx] },
+      { ok: true, added: newParts.length },
+      { parts: newParts, transactions: newTx },
+    )
+  }
+
   const REPLACED = { replaced: true }
 
   const loadSample = () => commit(generateSampleData({ now: now() }), { ok: true }, REPLACED)
@@ -182,6 +198,7 @@ export const createStore = ({ storage, now = () => new Date().toISOString(), mak
     recordInboundBatch,
     recordOutbound,
     cancelTransaction,
+    addCatalog,
     loadSample,
     resetAll,
     restoreBackup,

@@ -250,3 +250,35 @@ describe('여러 탭에서 같은 저장소를 쓸 때', () => {
     expect(listener).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('addCatalog (다른 회사 부품 묶음 추가)', () => {
+  const catalogPart = { partNo: 'YP-RV-001', name: '추진기 모듈', spec: '', unit: 'EA', safetyStock: 2, location: 'Y-01', active: true, createdAt: NOW, updatedAt: NOW }
+  const openingTx = { id: 'YP-OPEN-001', type: 'IN', partNo: 'YP-RV-001', qty: 6, partner: '', worker: '', memo: '', refId: null, createdAt: NOW }
+
+  it('없는 부품과 그 첫 입고 기록을 더하고, 동기화 보낼 목록에 알린다', () => {
+    const onLocalChange = vi.fn()
+    const store = createStore({ storage: fakeStorage(), now: () => NOW, onLocalChange })
+    store.addPart(partInput)
+    onLocalChange.mockClear()
+    const result = store.addCatalog({ parts: [catalogPart], transactions: [openingTx] })
+    expect(result).toEqual({ ok: true, added: 1 })
+    expect(store.getState().parts.map((p) => p.partNo)).toEqual(['SK-AD-001', 'YP-RV-001'])
+    expect(store.getStockMap().get('YP-RV-001')).toBe(6)
+    expect(onLocalChange).toHaveBeenCalledWith({ parts: [catalogPart], transactions: [openingTx] })
+  })
+
+  it('이미 있는 부품은 건드리지 않고, 그 부품의 기록도 더하지 않는다', () => {
+    const store = createStore({ storage: fakeStorage(), now: () => NOW })
+    store.addCatalog({ parts: [catalogPart], transactions: [openingTx] })
+    const again = store.addCatalog({ parts: [{ ...catalogPart, name: '바뀐 이름' }], transactions: [{ ...openingTx, id: 'other' }] })
+    expect(again).toEqual({ ok: true, added: 0 })
+    expect(store.getState().parts[0].name).toBe('추진기 모듈')
+    expect(store.getState().transactions).toHaveLength(1)
+  })
+
+  it('이미 있는 기록 ID는 다시 더하지 않는다', () => {
+    const store = createStore({ storage: fakeStorage(), now: () => NOW })
+    store.addCatalog({ parts: [], transactions: [openingTx] })
+    expect(store.getState().transactions).toHaveLength(0)
+  })
+})
