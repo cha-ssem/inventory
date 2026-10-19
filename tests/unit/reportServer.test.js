@@ -35,6 +35,13 @@ describe('sanitizeReportInput', () => {
     expect(plain(result.value.stats)).toEqual(input.stats)
   })
 
+  it('AI 입력이 4만 자를 넘으면 거부한다 (비용·요청 시간 보호)', () => {
+    const big = { ...input, completed: Array.from({ length: 60 }, () => ({ ...input.completed[0], findings: '가'.repeat(1000) })) }
+    const value = gs.sanitizeReportInput(big).value
+    expect(gs.checkAiInputSize(value)).toMatchObject({ ok: false, code: 'TOO_LARGE' })
+    expect(gs.checkAiInputSize(gs.sanitizeReportInput(input).value)).toEqual(expect.objectContaining({ ok: true }))
+  })
+
   it('목록 길이를 제한한다 (요청 시간·비용 보호)', () => {
     const many = Array.from({ length: 250 }, () => input.completed[0])
     expect(gs.sanitizeReportInput({ ...input, completed: many }).value.completed).toHaveLength(200)

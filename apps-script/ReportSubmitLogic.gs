@@ -7,12 +7,17 @@ var SHEET_REPORTS = 'reports'
 var REPORT_COLUMNS = [
   'reportKey', 'reportId', 'version', 'title', 'period', 'from', 'to', 'sites', 'author', 'aiUsed',
   'completed', 'issue', 'open', 'urgentOpen', 'summary', 'findings', 'actions', 'nextPlan',
-  'finalizedAt', 'submittedAt', 'mailTo', 'mailStatus',
+  'finalizedAt', 'submittedAt', 'mailTo', 'mailStatus', 'mailAt',
 ]
 var REPORT_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
 var EMAIL = /^[^\s@,;<>"']+@[^\s@,;<>"']+\.[^\s@,;<>"']+$/
 var MAX_RECIPIENTS = 5
-var MAIL_STATUS = { PENDING: 'PENDING', SENT: 'SENT', FAILED: 'FAILED', QUOTA: 'QUOTA' }
+var MAIL_STATUS = { SENDING: 'SENDING', SENT: 'SENT', FAILED: 'FAILED', QUOTA: 'QUOTA' }
+// 다른 요청이 메일을 보내는 중이면 기다린다. 이 시간이 지나도 SENDING이면 멈춘 것으로 보고 다시 보낸다.
+var SENDING_STALE_MS = 5 * 60000
+var DEFAULT_SUBMIT_DAILY_LIMIT = 10
+var REPORT_ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/
+var BODY_KEYS = ['summary', 'findings', 'actions', 'nextPlan']
 
 // 확정한 보고서만 받는다. 보고서 데이터는 AI 초안과 같은 규칙으로 정리하고, 문장·확정 정보를 더한다.
 function sanitizeSubmission(raw) {
@@ -20,19 +25,21 @@ function sanitizeSubmission(raw) {
   if (typeof data.reportId !== 'string' || !REPORT_ID.test(data.reportId)) return reportFail('BAD_REQUEST', '보고서 ID가 올바르지 않습니다.')
   var version = Number(data.version)
   if (!(version >= 1 && version % 1 === 0)) return reportFail('BAD_REQUEST', '보고서 버전이 올바르지 않습니다.')
-  if (!isDateString(data.finalizedAt)) return reportFail('BAD_REQUEST', '확정한 보고서만 제출할 수 있습니다.')
+  if (typeof data.finalizedAt !== 'string' || !REPORT_ISO_TIME.test(data.finalizedAt)) return reportFail('BAD_REQUEST', '확정한 보고서만 제출할 수 있습니다.')
   var input = sanitizeReportInput(data)
   if (!input.ok) return input
   var body = sanitizeReportBody(data.body)
   if (!body.summary) return reportFail('BAD_REQUEST', '요약이 없는 보고서는 제출할 수 없습니다.')
-  var value = input.value
-  value.key = data.reportId + '|' + version
-  value.reportId = data.reportId
-  value.version = version
-  value.author = clipText(data.author, 50)
-  value.aiUsed = data.aiUsed === true
-  value.finalizedAt = data.finalizedAt
-  value.body = body
+  var value = {}
+  Object.keys(input.value).forEach(function (k) {
+    value[k] = input.value[k]
+  })
+  ;[
+    ['key', data.reportId + '|' + version], ['reportId', data.reportId], ['version', version], ['author', clipText(data.author, 50)],
+    ['aiUsed', data.aiUsed === true], ['finalizedAt', data.finalizedAt], ['body', body],
+  ].forEach(function (pair) {
+    value[pair[0]] = pair[1]
+  })
   return { ok: true, value: value }
 }
 
@@ -48,26 +55,58 @@ function parseRecipients(raw, fallback) {
   return list.slice(0, MAX_RECIPIENTS)
 }
 
-function reportToRow(sub, submittedAt, mailTo, mailStatus) {
+function reportToRow(sub, submittedAt, mailTo, mailStatus, mailAt) {
   var values = {
     reportKey: sub.key, reportId: sub.reportId, version: sub.version, title: sub.title, period: sub.period, from: sub.from, to: sub.to,
     sites: sub.siteNames.join(', '), author: sub.author, aiUsed: sub.aiUsed ? 'Y' : '',
     completed: sub.stats.completed, issue: sub.stats.issue, open: sub.stats.open, urgentOpen: sub.stats.urgentOpen,
     summary: sub.body.summary, findings: sub.body.findings, actions: sub.body.actions, nextPlan: sub.body.nextPlan,
-    finalizedAt: sub.finalizedAt, submittedAt: submittedAt, mailTo: mailTo.join(', '), mailStatus: mailStatus,
+    finalizedAt: sub.finalizedAt, submittedAt: submittedAt, mailTo: mailTo.join(', '), mailStatus: mailStatus, mailAt: mailAt || '',
   }
   return REPORT_COLUMNS.map(function (col) {
     return toCell(values[col])
   })
 }
 
-// 같은 보고서(ID·버전)를 다시 제출하면 줄을 늘리지 않는다. 메일은 아직 보내지 못한 경우에만 다시 보낸다.
-// rows: [{ reportKey, mailStatus }]
-function planSubmission(rows, key) {
+function isSendingNow(row, nowMs) {
+  return row.mailStatus === MAIL_STATUS.SENDING && nowMs - Date.parse(row.mailAt || '') < SENDING_STALE_MS
+}
+
+// 같은 보고서(ID·버전)를 다시 제출하면 줄을 늘리지 않는다. 메일은 아직 보내지 못했고, 다른 요청이 보내는 중이 아닐 때만 다시 보낸다.
+// rows: [{ reportKey, mailStatus, mailAt }]
+function planSubmission(rows, key, nowMs) {
   for (var i = 0; i < rows.length; i += 1) {
-    if (rows[i].reportKey === key) return { append: false, rowIndex: i, sendMail: rows[i].mailStatus !== MAIL_STATUS.SENT }
+    if (rows[i].reportKey !== key) continue
+    var send = rows[i].mailStatus !== MAIL_STATUS.SENT && !isSendingNow(rows[i], nowMs)
+    return { append: false, rowIndex: i, sendMail: send }
   }
   return { append: true, rowIndex: null, sendMail: true }
+}
+
+// 이미 기록한 줄과 제목·문장이 같은지 (확정 후 내용이 바뀐 채 다시 오면 메일과 시트가 달라지지 않도록 거부)
+// stored: 시트 줄을 { 열 이름: 셀 값 }으로 바꾼 것
+function sameSubmission(stored, sub) {
+  var same = function (col, value) {
+    return fromTextCell(stored[col]) === String(value)
+  }
+  return same('title', sub.title) && BODY_KEYS.every(function (k) {
+    return same(k, sub.body[k])
+  })
+}
+
+function parseSubmitLimit(raw) {
+  if (raw === null || raw === undefined || String(raw).trim() === '') return DEFAULT_SUBMIT_DAILY_LIMIT
+  var n = Number(raw)
+  if (isNaN(n)) return DEFAULT_SUBMIT_DAILY_LIMIT
+  return n > 0 ? Math.floor(n) : 0
+}
+
+// 연결 토큰이 새도 메일을 대량으로 보내지 못하게 하루 제출(새 줄) 수를 제한한다
+function checkSubmitQuota(usage, today, limit) {
+  if (limit <= 0) return reportFail('SUBMIT_DISABLED', '관리자가 보고서 제출을 꺼 두었습니다.')
+  var count = usage && usage.date === today ? Number(usage.count) || 0 : 0
+  if (count >= limit) return reportFail('SUBMIT_QUOTA', '오늘 보고서 제출 한도(' + limit + '건)를 다 썼습니다. 내일 다시 하거나 관리자에게 문의하세요.')
+  return { ok: true, next: { date: today, count: count + 1 } }
 }
 
 var HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
@@ -138,8 +177,9 @@ function buildReportHtml(sub, submittedAt) {
     '</div>'
 }
 
+// 줄바꿈 같은 제어 문자는 공백으로 (메일 머리글이 깨지지 않도록)
 function reportMailSubject(sub) {
-  return '[점검 보고서] ' + sub.title + ' v' + sub.version
+  return ('[점검 보고서] ' + sub.title + ' v' + sub.version).replace(/[\u0000-\u001f\u007f]/g, ' ')
 }
 
 function reportFileName(sub) {

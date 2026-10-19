@@ -1,5 +1,5 @@
 import { INSPECTION_STORAGE_KEY, createInspectionStore } from './data/inspectionStore.js'
-import { REPORT_STORAGE_KEY, createReportStore, isValidReportState } from './data/reportStore.js'
+import { REPORT_STORAGE_KEY, createReportStore, isValidReportState, normalizeReportState } from './data/reportStore.js'
 import { STORAGE_KEY, createStorage, getBrowserStorageBackend } from './data/storage.js'
 import { createStore } from './data/store.js'
 import { isValidInspectionState, normalizeInspectionState } from './domain/inspection/validation.js'
@@ -80,7 +80,7 @@ const start = () => {
     isConnected: () => Boolean(engineRef.sync?.getConfig()),
     requestSync: () => engineRef.sync?.requestSync(),
   })
-  const reports = createReportStore({ storage: createStorage(backend, REPORT_STORAGE_KEY, isValidReportState) })
+  const reports = createReportStore({ storage: createStorage(backend, REPORT_STORAGE_KEY, isValidReportState, normalizeReportState) })
   const sync = createSyncEngine({ store, kv: backend, createClient: (config) => createSyncClient(config), channels: [inspectionChannel] })
   Object.assign(engineRef, { sync, inspectionChannel })
   const app = document.getElementById('app')

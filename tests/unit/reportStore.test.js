@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createReportStore, isValidReportState } from '../../src/data/reportStore.js'
+import { createReportStore, isValidReportState, normalizeReportState } from '../../src/data/reportStore.js'
 
 const NOW = '2026-10-19T09:00:00.000Z'
 const snapshot = { stats: { completed: 0, ok: 0, issue: 0, fail: 0, newRequests: 0, open: 0, urgentOpen: 0, partsUsed: 0 }, completed: [], newRequests: [], open: [] }
@@ -66,9 +66,10 @@ describe('createReportStore', () => {
     expect(store.list().map((r) => r.reportId)).toEqual(['rp-1', 'rp-2'])
   })
 
-  it('저장에 실패하면 경고를 돌려준다', () => {
+  it('저장에 실패하면 실패로 돌려주고 목록에 넣지 않는다', () => {
     const { store } = makeStore({ failSave: true })
-    expect(store.create(input, snapshot).warning).toMatch(/저장하지 못했습니다/)
+    expect(store.create(input, snapshot)).toMatchObject({ ok: false, error: expect.stringMatching(/저장하지 못했습니다/) })
+    expect(store.list()).toEqual([])
   })
 
   it('다른 탭이 저장한 보고서를 덮어쓰지 않는다', () => {
@@ -99,5 +100,41 @@ describe('markSubmitted (reportStore)', () => {
     store.finalize('rp-1')
     expect(store.markSubmitted('rp-1', { submittedAt: NOW, mailStatus: 'SENT', recipients: 1 }).value.status).toBe('SUBMITTED')
     expect(store.markSubmitted('none', {}).ok).toBe(false)
+  })
+})
+
+describe('리뷰 반영: 저장 실패·손상·수정본 중복', () => {
+  it('저장에 실패하면 메모리도 바꾸지 않고 실패로 알린다 (옛 문장으로 확정되지 않도록)', () => {
+    let failing = false
+    let saved = null
+    const storage = { load: () => saved, save: (s) => (failing ? false : ((saved = s), true)), clear: () => true }
+    let n = 0
+    const store = createReportStore({ storage, now: () => NOW, makeId: () => `rp-${++n}` })
+    store.create(input, snapshot)
+    failing = true
+    const result = store.update('rp-1', { summary: '고친 요약' })
+    expect(result).toMatchObject({ ok: false, error: expect.stringMatching(/저장하지 못했습니다/) })
+    expect(store.get('rp-1').body.summary).not.toBe('고친 요약')
+    failing = false
+    expect(store.update('rp-1', { summary: '고친 요약' }).ok).toBe(true)
+    expect(store.finalize('rp-1').value.body.summary).toBe('고친 요약')
+  })
+
+  it('수정본이 이미 있으면 새로 만들지 않고 그 수정본을 알려 준다', () => {
+    const { store } = makeStore()
+    store.create(input, snapshot)
+    store.finalize('rp-1')
+    const first = store.revise('rp-1')
+    const again = store.revise('rp-1')
+    expect(again).toMatchObject({ ok: true, existing: true, value: { reportId: first.value.reportId } })
+    expect(store.list()).toHaveLength(2)
+  })
+})
+
+describe('normalizeReportState', () => {
+  it('형식이 틀린 보고서만 빼고 나머지는 살린다', () => {
+    const good = { reportId: 'a', status: 'DRAFT', body: {}, snapshot: {} }
+    expect(normalizeReportState({ reports: [good, { reportId: 'b', status: '?' }, null] })).toEqual({ reports: [good] })
+    expect(normalizeReportState({ reports: 'x' })).toEqual({ reports: 'x' })
   })
 })

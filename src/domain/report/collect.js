@@ -1,7 +1,7 @@
 import { addDays, toDateKey } from '../dates.js'
+import { STATUS_AFTER_EVENT } from '../inspection/constants.js'
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
-const STATUS_AFTER = { REQUEST: 'REQUESTED', ASSIGN: 'ASSIGNED', START: 'IN_PROGRESS', COMPLETE: 'COMPLETED', CANCEL: 'CANCELLED' }
 const OPEN = new Set(['REQUESTED', 'ASSIGNED', 'IN_PROGRESS'])
 
 // 일간: 그날 하루, 주간: 그날이 들어 있는 월요일~일요일 (날짜는 'YYYY-MM-DD')
@@ -26,7 +26,7 @@ const stateAt = (request, to) =>
     .filter((e) => toDateKey(e.at) <= to)
     .reduce(
       (acc, e) => ({
-        status: STATUS_AFTER[e.type] ?? acc.status,
+        status: STATUS_AFTER_EVENT[e.type] ?? acc.status,
         assignee: e.type === 'ASSIGN' ? e.payload.assignee : acc.assignee,
         dueDate: e.type === 'ASSIGN' ? e.payload.dueDate || '' : acc.dueDate,
       }),

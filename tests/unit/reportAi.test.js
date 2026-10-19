@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildAiInput, buildSubmission, AI_DRAFT_TIMEOUT_MS } from '../../src/domain/report/aiInput.js'
+import { buildAiInput, buildSubmission, isAiInputTooLarge, AI_DRAFT_TIMEOUT_MS, AI_INPUT_MAX_CHARS } from '../../src/domain/report/aiInput.js'
 
 const report = {
   reportId: 'rp-1', title: '일간 점검 보고서 (2026-10-19)', period: 'DAILY', from: '2026-10-19', to: '2026-10-19',
@@ -35,5 +35,14 @@ describe('buildSubmission', () => {
     expect(buildSubmission(finalized)).toEqual({
       ...buildAiInput(finalized), reportId: 'rp-1', version: 2, author: '김수중', aiUsed: true, finalizedAt: '2026-10-19T03:00:00.000Z', body: finalized.body,
     })
+  })
+})
+
+describe('isAiInputTooLarge', () => {
+  it('서버와 같은 4만 자 상한으로 미리 막는다', () => {
+    expect(isAiInputTooLarge(buildAiInput(report))).toBe(false)
+    const big = { ...report, snapshot: { ...report.snapshot, completed: Array.from({ length: 60 }, () => ({ ...report.snapshot.completed[0], findings: '가'.repeat(1000) })) } }
+    expect(isAiInputTooLarge(buildAiInput(big))).toBe(true)
+    expect(AI_INPUT_MAX_CHARS).toBe(40_000)
   })
 })

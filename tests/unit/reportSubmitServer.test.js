@@ -38,6 +38,10 @@ describe('sanitizeSubmission', () => {
     ['확정 일시', { finalizedAt: '' }],
     ['요약 없음', { body: { ...submission.body, summary: '' } }],
     ['기간', { period: 'X' }],
+    ['확정 일시 형식(ISO 아님)', { finalizedAt: 'Hello world 2020' }],
+    ['주간인데 월~일이 아님', { from: '2026-10-13', to: '2026-10-19' }],
+    ['시작이 끝보다 늦음', { from: '2026-10-18', to: '2026-10-12' }],
+    ['일간인데 날짜가 둘', { period: 'DAILY', from: '2026-10-12', to: '2026-10-13' }],
   ])('%s가 틀리면 거부한다', (_, change) => {
     expect(gs.sanitizeSubmission({ ...submission, ...change })).toMatchObject({ ok: false, code: 'BAD_REQUEST' })
   })
@@ -66,12 +70,38 @@ describe('reportToRow / planSubmission', () => {
     expect(row[gs.REPORT_COLUMNS.indexOf('mailStatus')]).toBe('PENDING')
   })
 
+  const NOW_MS = Date.parse('2026-10-19T02:00:00.000Z')
+  const minutesAgo = (m) => new Date(NOW_MS - m * 60000).toISOString()
+
   it('처음 제출이면 새 줄과 메일, 이미 있고 메일을 보냈으면 아무것도 하지 않는다, 메일이 실패했었으면 메일만 다시', () => {
-    expect(plain(gs.planSubmission([], 'rp-1|2'))).toEqual({ append: true, rowIndex: null, sendMail: true })
+    expect(plain(gs.planSubmission([], 'rp-1|2', NOW_MS))).toEqual({ append: true, rowIndex: null, sendMail: true })
     const rows = [{ reportKey: 'rp-1|1', mailStatus: 'SENT' }, { reportKey: 'rp-1|2', mailStatus: 'SENT' }]
-    expect(plain(gs.planSubmission(rows, 'rp-1|2'))).toEqual({ append: false, rowIndex: 1, sendMail: false })
+    expect(plain(gs.planSubmission(rows, 'rp-1|2', NOW_MS))).toEqual({ append: false, rowIndex: 1, sendMail: false })
     const failed = [{ reportKey: 'rp-1|2', mailStatus: 'FAILED' }]
-    expect(plain(gs.planSubmission(failed, 'rp-1|2'))).toEqual({ append: false, rowIndex: 0, sendMail: true })
+    expect(plain(gs.planSubmission(failed, 'rp-1|2', NOW_MS))).toEqual({ append: false, rowIndex: 0, sendMail: true })
+  })
+
+  it('다른 요청이 보내는 중(5분 안)이면 다시 보내지 않고, 5분이 지나면 멈춘 것으로 보고 다시 보낸다', () => {
+    expect(gs.planSubmission([{ reportKey: 'k', mailStatus: 'SENDING', mailAt: minutesAgo(1) }], 'k', NOW_MS).sendMail).toBe(false)
+    expect(gs.planSubmission([{ reportKey: 'k', mailStatus: 'SENDING', mailAt: minutesAgo(6) }], 'k', NOW_MS).sendMail).toBe(true)
+  })
+
+  it('이미 제출한 줄과 제목·문장이 같은지 확인한다 (확정 후 내용이 바뀐 재제출 거부)', () => {
+    const value = gs.sanitizeSubmission(submission).value
+    const stored = Object.fromEntries(gs.REPORT_COLUMNS.map((c, i) => [c, gs.reportToRow(value, 'x', [], 'SENT')[i]]))
+    expect(gs.sameSubmission(stored, value)).toBe(true)
+    expect(gs.sameSubmission({ ...stored, summary: '다른 요약' }, value)).toBe(false)
+    const tricky = gs.sanitizeSubmission({ ...submission, body: { ...submission.body, summary: '=1+1 요약' } }).value
+    const trickyStored = Object.fromEntries(gs.REPORT_COLUMNS.map((c, i) => [c, gs.reportToRow(tricky, 'x', [], 'SENT')[i]]))
+    expect(gs.sameSubmission(trickyStored, tricky)).toBe(true)
+  })
+
+  it('하루 제출 한도: 새 줄을 추가할 때만 센다, 0이면 끔', () => {
+    expect(plain(gs.checkSubmitQuota(null, '2026-10-19', 10))).toEqual({ ok: true, next: { date: '2026-10-19', count: 1 } })
+    expect(gs.checkSubmitQuota({ date: '2026-10-19', count: 10 }, '2026-10-19', 10)).toMatchObject({ ok: false, code: 'SUBMIT_QUOTA' })
+    expect(gs.checkSubmitQuota(null, '2026-10-19', 0)).toMatchObject({ ok: false, code: 'SUBMIT_DISABLED' })
+    expect(gs.parseSubmitLimit('')).toBe(10)
+    expect(gs.parseSubmitLimit('3')).toBe(3)
   })
 })
 
@@ -87,8 +117,10 @@ describe('buildReportHtml', () => {
     expect(out).toContain('AI 초안 사용')
   })
 
-  it('메일 제목에 보고서 제목과 버전을 넣는다', () => {
+  it('메일 제목에 보고서 제목과 버전을 넣고, 줄바꿈 같은 제어 문자는 공백으로 바꾼다', () => {
     const value = gs.sanitizeSubmission(submission).value
     expect(gs.reportMailSubject(value)).toBe('[점검 보고서] 주간 점검 보고서 (2026-10-12 ~ 2026-10-18) v2')
+    const tricky = gs.sanitizeSubmission({ ...submission, title: '보고서\nBcc: x@evil.com' }).value
+    expect(gs.reportMailSubject(tricky)).not.toMatch(/[\u0000-\u001f]/)
   })
 })

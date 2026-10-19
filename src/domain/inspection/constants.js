@@ -48,6 +48,15 @@ export const EVENT_TYPES = Object.freeze({
   RECUR: 'RECUR', // 열린 요청과 같은 이상이 다시 감지됨
 })
 
+// 이벤트가 반영된 뒤의 상태 (RECUR는 상태를 바꾸지 않음). flow.js의 전이표와 보고서 집계가 함께 쓴다.
+export const STATUS_AFTER_EVENT = Object.freeze({
+  REQUEST: 'REQUESTED',
+  ASSIGN: 'ASSIGNED',
+  START: 'IN_PROGRESS',
+  COMPLETE: 'COMPLETED',
+  CANCEL: 'CANCELLED',
+})
+
 export const STATUSES = Object.freeze({
   REQUESTED: '요청',
   ASSIGNED: '배정',

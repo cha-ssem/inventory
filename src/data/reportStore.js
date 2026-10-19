@@ -4,13 +4,17 @@ import { REPORT_STATUSES, createDraft, finalizeReport, markSubmitted as markRepo
 export const REPORT_STORAGE_KEY = 'samkwang-inventory:reports:v1'
 
 const EMPTY = Object.freeze({ reports: [] })
-const SAVE_WARNING = '브라우저에 저장하지 못했습니다. 화면을 닫으면 방금 내용이 사라질 수 있습니다.'
+const SAVE_FAILED = '브라우저에 저장하지 못했습니다. 저장 공간을 확인한 뒤 다시 시도하세요. (방금 고친 내용은 화면에만 남아 있습니다)'
 const NOT_FOUND = { ok: false, error: '보고서를 찾을 수 없습니다.' }
 
 const isValidReport = (r) =>
   Boolean(r) && typeof r.reportId === 'string' && Boolean(REPORT_STATUSES[r.status]) && Boolean(r.body) && Boolean(r.snapshot)
 
 export const isValidReportState = (data) => Boolean(data) && Array.isArray(data.reports) && data.reports.every(isValidReport)
+
+// 불러올 때 형식이 틀린 보고서만 빼고 나머지는 살린다 (하나 때문에 목록 전체가 사라지지 않도록)
+export const normalizeReportState = (data) =>
+  data && Array.isArray(data.reports) ? { ...data, reports: data.reports.filter(isValidReport) } : data
 
 const defaultMakeId = () =>
   globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
@@ -27,11 +31,14 @@ export const createReportStore = ({ storage, now = () => new Date().toISOString(
 
   const notify = () => listeners.forEach((listener) => listener(state))
 
+  // 저장에 실패하면 메모리도 바꾸지 않는다. 바꿔 두면 다음 작업이 저장소의 옛 상태를 다시 읽어
+  // 고친 내용이 조용히 사라진 채 확정될 수 있다 (보고서는 확정 후 고칠 수 없어서 더 위험하다).
   const commit = (reports, result) => {
-    state = { reports }
-    const saved = storage.save(state)
+    const next = { reports }
+    if (!storage.save(next)) return { ok: false, error: SAVE_FAILED }
+    state = next
     notify()
-    return saved ? result : { ...result, warning: SAVE_WARNING }
+    return result
   }
 
   const upsert = (report) => commit([...state.reports.filter((r) => r.reportId !== report.reportId), report], { ok: true, value: report })
@@ -64,6 +71,9 @@ export const createReportStore = ({ storage, now = () => new Date().toISOString(
     syncFromStorage()
     const report = get(reportId)
     if (!report) return NOT_FOUND
+    // 이미 이 보고서의 수정본이 있으면 새로 만들지 않는다 (같은 버전 번호가 둘 생겨 제출이 두 번 되지 않도록)
+    const existing = state.reports.find((r) => r.supersedes === reportId)
+    if (existing) return { ok: true, existing: true, value: existing }
     const result = reviseReport(report, { now: now(), makeId, author })
     return result.ok ? upsert(result.value) : result
   }

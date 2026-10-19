@@ -76,3 +76,20 @@ describe('collectReport', () => {
     expect(ids).not.toContain('YP-R-011')
   })
 })
+
+describe('날짜 경계 (한국 시간 기준)', () => {
+  const masters2 = { sites: [{ siteId: 'ST-01', name: 'A' }], robots: [{ robotId: 'RV-01', name: 'R' }] }
+  const done = (id, completedAt) => ({
+    requestId: id, siteId: 'ST-01', robotId: 'RV-01', title: id, priority: 'MID', source: 'MANUAL', status: 'COMPLETED',
+    requestedAt: '2026-10-12T00:00:00.000Z', completedAt, completion: { result: 'OK', findings: '', actions: '', usedParts: [] },
+    history: [{ type: 'REQUEST', at: '2026-10-12T00:00:00.000Z', payload: {} }, { type: 'COMPLETE', at: completedAt, actor: '', payload: {} }],
+  })
+
+  it('일요일 23:59(KST)에 끝난 점검은 그 주에, 월요일 00:00(KST)에 끝난 점검은 다음 주에 들어간다', () => {
+    const list = [done('sun-2359', '2026-10-18T14:59:00.000Z'), done('mon-0000', '2026-10-18T15:00:00.000Z')]
+    const thisWeek = collectReport(list, masters2, { ...periodRange('WEEKLY', '2026-10-15'), siteIds: ['ST-01'] })
+    const nextWeek = collectReport(list, masters2, { ...periodRange('WEEKLY', '2026-10-19'), siteIds: ['ST-01'] })
+    expect(thisWeek.completed.map((c) => c.requestId)).toEqual(['sun-2359'])
+    expect(nextWeek.completed.map((c) => c.requestId)).toEqual(['mon-0000'])
+  })
+})

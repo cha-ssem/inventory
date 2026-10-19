@@ -4,9 +4,12 @@
  */
 
 // maxTokens: 네 문단을 담기에 충분하고 Apps Script 외부 요청 시간 안에 끝나도록 작게 둔다
+// maxInputChars: AI에 보내는 점검 기록 JSON 글자 수 상한 (앱 aiInput.js의 AI_INPUT_MAX_CHARS와 같게)
 var REPORT_LIMITS = {
   maxTokens: 3000, defaultDailyLimit: 20, maxCompleted: 200, maxOpen: 100, maxText: 100, maxNote: 1000, maxSection: 2000, maxParts: 20,
+  maxInputChars: 40000,
 }
+var DAY_MS = 86400000
 var REPORT_PERIOD_LABELS = { DAILY: '일간', WEEKLY: '주간' }
 var REPORT_DATE = /^\d{4}-\d{2}-\d{2}$/
 var REPORT_SECTION_KEYS = ['summary', 'findings', 'actions', 'nextPlan']
@@ -31,6 +34,20 @@ var REPORT_SCHEMA = {
   additionalProperties: false,
   required: REPORT_SECTION_KEYS,
   properties: { summary: { type: 'string' }, findings: { type: 'string' }, actions: { type: 'string' }, nextPlan: { type: 'string' } },
+}
+
+// 날짜 글자(YYYY-MM-DD)를 UTC 자정 기준 밀리초로 (요일·날짜 차이 계산용)
+function dateKeyMs(key) {
+  var parts = key.split('-')
+  return Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+}
+
+// 일간은 하루, 주간은 월요일~일요일이어야 한다
+function isConsistentPeriod(period, from, to) {
+  var fromMs = dateKeyMs(from)
+  var toMs = dateKeyMs(to)
+  if (period === 'DAILY') return fromMs === toMs
+  return toMs - fromMs === 6 * DAY_MS && new Date(fromMs).getUTCDay() === 1
 }
 
 function reportFail(code, error) {
@@ -80,6 +97,7 @@ function sanitizeReportInput(raw) {
   if (!raw || typeof raw !== 'object') return reportFail('BAD_REQUEST', '보고서 데이터가 없습니다.')
   if (!REPORT_PERIOD_LABELS[raw.period]) return reportFail('BAD_REQUEST', '보고서 기간이 올바르지 않습니다.')
   if (!REPORT_DATE.test(raw.from || '') || !REPORT_DATE.test(raw.to || '')) return reportFail('BAD_REQUEST', '보고서 날짜가 올바르지 않습니다.')
+  if (!isConsistentPeriod(raw.period, raw.from, raw.to)) return reportFail('BAD_REQUEST', '보고서 기간이 날짜와 맞지 않습니다.')
   if (!Array.isArray(raw.completed) || !Array.isArray(raw.open)) return reportFail('BAD_REQUEST', '보고서 목록 형식이 올바르지 않습니다.')
   var stats = raw.stats || {}
   var statKeys = ['completed', 'ok', 'issue', 'fail', 'newRequests', 'open', 'urgentOpen', 'partsUsed']
@@ -102,6 +120,14 @@ function sanitizeReportInput(raw) {
       open: raw.open.slice(0, REPORT_LIMITS.maxOpen).map(sanitizeOpenItem),
     },
   }
+}
+
+// 정리한 뒤에도 너무 크면 AI에 보내지 않는다 (한 번에 수십만 토큰이 나가지 않도록)
+function checkAiInputSize(input) {
+  if (JSON.stringify(input).length > REPORT_LIMITS.maxInputChars) {
+    return reportFail('TOO_LARGE', '보고서 내용이 많아 AI 초안을 만들 수 없습니다. 기간이나 현장 수를 줄여 주세요.')
+  }
+  return { ok: true }
 }
 
 function buildReportRequest(input, options) {

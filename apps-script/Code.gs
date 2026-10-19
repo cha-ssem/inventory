@@ -9,7 +9,8 @@ var SHEET_PARTS = 'parts'
 var REPLACE_LIMIT = 20000
 var LOCK_WAIT_MS = 20000
 var NUMBER_COLUMNS = { qty: true, safetyStock: true }
-var WRITE_ACTIONS = { push: true, replaceAll: true, saveMappings: true, inspPush: true, submitReport: true }
+// submitReport는 메일을 보내는 동안 잠금을 풀기 위해 Report.gs가 직접 잠근다
+var WRITE_ACTIONS = { push: true, replaceAll: true, saveMappings: true, inspPush: true }
 
 function doGet() {
   return jsonOutput({ ok: true, app: 'samkwang-inventory', message: '이 주소는 입출고관리 앱 전용입니다. 요청은 POST로 보내세요.' })

@@ -83,10 +83,37 @@ describe('submitReport 요청', () => {
     expect(gas.sheets.reports).toBeUndefined()
   })
 
-  it('쓰기 요청이라 잠금을 잡고 처리한다, setup()은 reports 시트를 만든다', () => {
+  it('메일을 보내는 동안에는 전체 잠금을 잡지 않는다 (Report.gs가 시트 기록 때만 잠금), setup()은 reports 시트를 만든다', () => {
     const { gas } = setup()
-    expect(gas.context.WRITE_ACTIONS.submitReport).toBe(true)
+    expect(gas.context.WRITE_ACTIONS.submitReport).toBeUndefined()
     gas.context.setup()
     expect(Object.keys(gas.sheets)).toContain('reports')
+  })
+
+  it('하루 제출 한도: 새 보고서만 세고, 같은 보고서 재제출은 세지 않는다', () => {
+    const { post } = setup({ properties: { REPORT_SUBMIT_DAILY_LIMIT: '1' } })
+    expect(post({ report }).ok).toBe(true)
+    expect(post({ report }).ok).toBe(true)
+    expect(post({ report: { ...report, reportId: 'rp-2' } })).toMatchObject({ ok: false, code: 'SUBMIT_QUOTA' })
+  })
+
+  it('이미 제출한 같은 버전과 내용이 다르면 거부한다 (시트·메일 내용이 갈라지지 않도록)', () => {
+    const mail = { throws: '실패' }
+    const { gas, post } = setup({ mail })
+    post({ report })
+    delete mail.throws
+    expect(post({ report: { ...report, body: { ...report.body, summary: '바뀐 요약' } } })).toMatchObject({ ok: false, code: 'CONFLICT' })
+    expect(gas.mails).toHaveLength(0)
+  })
+
+  it('다른 요청이 보내는 중(SENDING, 5분 안)이면 메일을 또 보내지 않는다', () => {
+    const { gas, post } = setup()
+    post({ report })
+    const row = 2
+    const statusCol = gas.context.REPORT_COLUMNS.indexOf('mailStatus')
+    gas.sheets.reports.cells[row - 1][statusCol] = 'SENDING'
+    gas.sheets.reports.cells[row - 1][gas.context.REPORT_COLUMNS.indexOf('mailAt')] = new Date().toISOString()
+    expect(post({ report })).toMatchObject({ ok: true, duplicate: true, mailStatus: 'SENDING' })
+    expect(gas.mails).toHaveLength(1)
   })
 })

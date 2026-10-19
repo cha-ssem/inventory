@@ -95,9 +95,9 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
     submitReport: (req) => {
       const sub = gs.sanitizeSubmission(req.report)
       if (!sub.ok) return sub
-      const plan = gs.planSubmission(db.reports, sub.value.key)
+      const plan = gs.planSubmission(db.reports, sub.value.key, Date.now())
       const submittedAt = plan.append ? new Date().toISOString() : db.reports[plan.rowIndex].submittedAt
-      if (plan.append) db.reports = [...db.reports, { reportKey: sub.value.key, submittedAt, mailStatus: 'PENDING' }]
+      if (plan.append) db.reports = [...db.reports, { reportKey: sub.value.key, submittedAt, mailStatus: 'SENDING', mailAt: submittedAt }]
       const index = plan.append ? db.reports.length - 1 : plan.rowIndex
       let mailStatus = db.reports[index].mailStatus
       if (plan.sendMail) {
