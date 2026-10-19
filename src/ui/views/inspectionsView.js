@@ -3,7 +3,7 @@ import { isOpenStatus } from '../../domain/inspection/flow.js'
 import { STATUSES } from '../../domain/inspection/constants.js'
 import { formValues, formatNumber, html, qs, setHtml } from '../dom.js'
 import { openRequestForm } from '../components/inspectionForms.js'
-import { option, priorityBadge, sourceLabel, statusBadge } from '../inspectionFormat.js'
+import { option, priorityBadge, sectionBanner, sourceLabel, statusBadge } from '../inspectionFormat.js'
 
 const statCard = (label, value, kind, testId) => html`<div class="stat-card ${kind}" data-testid="${testId}">
   <div class="label">${label}</div>
@@ -58,7 +58,7 @@ export const renderInspections = (container, { inspection, query, navigate }) =>
   const initialStatus = query.get('status') || 'open'
   setHtml(
     container,
-    html`<div class="page-head">
+    html`${sectionBanner()}<div class="page-head">
         <h1>현장점검</h1>
         <div class="actions"><button type="button" class="btn btn-primary" data-action="new">점검 요청 등록</button></div>
       </div>

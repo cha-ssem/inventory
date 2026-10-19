@@ -1,6 +1,7 @@
 import { formatDateTime } from '../../domain/dates.js'
 import { TX_LABELS } from '../../domain/transactions.js'
 import { formatNumber, html } from '../dom.js'
+import { partNoLabel } from '../partTag.js'
 
 export const typeBadge = (type) => html`<span class="badge badge-${type}">${TX_LABELS[type] || type}</span>`
 
@@ -14,7 +15,7 @@ const rowHtml = (row, showCancel) => html`
   <tr class="${row.cancelled ? 'is-cancelled' : ''}">
     <td>${formatDateTime(row.createdAt)}</td>
     <td>${typeBadge(row.type)}</td>
-    <td class="mono">${row.partNo}</td>
+    <td class="mono">${partNoLabel(row.partNo)}</td>
     <td>${row.partName}</td>
     <td class="num qty">${formatNumber(row.qty)}</td>
     <td>${row.partner}</td>

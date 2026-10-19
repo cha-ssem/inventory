@@ -101,3 +101,21 @@ test.describe('현장점검 흐름', () => {
     await expect(page.locator('.table-area')).toContainText('영풍산업 현장점검 샘플')
   })
 })
+
+test('영풍산업 확장 메뉴·화면·부품은 기존 입출고와 구별해서 보인다', async ({ page }) => {
+  await loadInspectionSample(page)
+  await expect(page.locator('.app-nav .nav-group-label')).toHaveText('영풍산업')
+  await expect(page.locator('.app-nav a.nav-yp')).toHaveText(['현장점검', '모니터링'])
+  await expect(page.locator('.yp-panel .section-tag')).toBeVisible()
+
+  await page.goto('/#/inspections')
+  await expect(page.getByTestId('section-banner')).toBeVisible()
+  await expect(page.locator('body')).toHaveAttribute('data-section', 'youngpoong')
+  await page.goto('/#/monitor')
+  await expect(page.getByTestId('section-banner')).toBeVisible()
+
+  await page.goto('/#/stock')
+  await expect(page.locator('body')).toHaveAttribute('data-section', 'inventory')
+  await expect(page.getByTestId('section-banner')).toHaveCount(0)
+  await expect(page.locator('tr[data-part-no="YP-RV-001"] .section-tag')).toHaveText('영풍')
+})

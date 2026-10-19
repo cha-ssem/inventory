@@ -4,6 +4,7 @@ import { downloadFile, formatNumber, html, qs, qsa, readFileAsText, setHtml } fr
 import { confirmDialog, notifyResult, openModal, toast } from '../feedback.js'
 import { openPartForm } from '../components/partForm.js'
 import { labelsPath } from './labelsView.js'
+import { partNoLabel } from '../partTag.js'
 
 const MAX_CSV_BYTES = 2 * 1024 * 1024
 
@@ -22,7 +23,7 @@ const partsTable = (rows, selected) =>
             ${rows.map(
               (r) => html`<tr class="${r.active === false ? 'is-inactive' : ''}">
                 <td><input type="checkbox" data-select="${r.partNo}" aria-label="${r.partNo} 선택" ${selected.has(r.partNo) ? 'checked' : ''} /></td>
-                <td class="mono">${r.partNo}</td>
+                <td class="mono">${partNoLabel(r.partNo)}</td>
                 <td>${r.name}</td>
                 <td>${r.spec}</td>
                 <td>${r.unit}</td>

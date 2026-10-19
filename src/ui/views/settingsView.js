@@ -37,7 +37,7 @@ export const renderSettings = (container, { store, inspection, sync }) => {
             <button type="button" class="btn btn-danger" data-action="reset">전체 초기화</button>
           </div>
         </section>
-        <section class="panel inspection-sample-slot"></section>
+        <section class="panel inspection-sample-slot yp-panel"></section>
         <section class="panel">
           <div class="panel-head"><h2>백업과 복원</h2></div>
           <p>모든 데이터를 JSON 파일로 내려받거나, 내려받은 파일로 되돌립니다.</p>

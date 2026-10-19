@@ -3,6 +3,7 @@ import { toDateKey } from '../../domain/dates.js'
 import { buildStockRows, searchStockRows } from '../../domain/stock.js'
 import { downloadFile, formatNumber, html, qs, setHtml } from '../dom.js'
 import { toast } from '../feedback.js'
+import { partNoLabel } from '../partTag.js'
 
 const statusBadge = (row) => {
   if (row.active === false) return html`<span class="badge">사용 중지</span>`
@@ -25,7 +26,7 @@ const stockTable = (rows) =>
           <tbody>
             ${rows.map(
               (r) => html`<tr class="${rowClass(r)}" data-part-no="${r.partNo}">
-                <td class="mono">${r.partNo}</td>
+                <td class="mono">${partNoLabel(r.partNo)}</td>
                 <td>${r.name}</td>
                 <td>${r.spec}</td>
                 <td>${r.location}</td>

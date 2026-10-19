@@ -21,7 +21,9 @@ export const SAMPLE_ROBOTS = [
   { robotId: 'RV-06', model: 'V4', name: 'V4 로봇팔 1호기', serial: 'V4-2501', siteId: null },
 ]
 
-// 기존 입출고 데이터에 더하는 로봇 부품 (YP-RV: 모듈, YP-SP: 소모품)
+// 기존 입출고 데이터에 더하는 로봇 부품 (YP-RV: 모듈, YP-SP: 소모품). 화면에서 이 접두어로 영풍산업 부품을 구별한다.
+export const ROBOT_PART_PREFIX = 'YP-'
+
 export const ROBOT_PARTS = [
   { partNo: 'YP-RV-001', name: '추진기 모듈', spec: '수평 4기통용', unit: 'EA', safetyStock: 4, location: 'Y-01-01' },
   { partNo: 'YP-RV-002', name: 'LED 조명 모듈', spec: '3000lm 방수', unit: 'EA', safetyStock: 4, location: 'Y-01-02' },

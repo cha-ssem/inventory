@@ -1,9 +1,83 @@
 /* 현장점검 (영풍산업) */
 
-/* 주 메뉴에서 점검 탭 묶음을 입출고 탭과 구분한다 */
-.app-nav a.nav-group-start {
+/* ── 영풍산업 확장 기능 구별 ──
+   청록색을 확장 기능 전용 강조색으로 쓴다. 확장 화면에서는 버튼·링크 등 기본 강조색(--primary)도 청록색으로 바뀐다. */
+:root {
+  --yp: #0e7c86;
+  --yp-strong: #0a5f67;
+  --yp-soft: #e0f3f4;
+  --yp-nav: #7fd8de;
+}
+
+body[data-section='youngpoong'] {
+  --primary: var(--yp);
+  --primary-strong: var(--yp-strong);
+  --primary-soft: var(--yp-soft);
+}
+
+/* 주 메뉴: "영풍산업" 묶음 이름과 청록색 탭 */
+.app-nav .nav-group-label {
+  align-self: center;
   margin-left: 0.75rem;
-  border-left: 1px solid rgb(255 255 255 / 18%);
+  padding: 0.15rem 0.5rem 0.15rem 0.75rem;
+  border-left: 1px solid rgb(255 255 255 / 25%);
+  color: var(--yp-nav);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.app-nav a.nav-yp {
+  color: var(--yp-nav);
+}
+
+.app-nav a.nav-yp:hover {
+  color: #fff;
+}
+
+.app-nav a.nav-yp.active {
+  color: #fff;
+  border-bottom-color: var(--yp-nav);
+  background: rgb(14 124 134 / 35%);
+}
+
+/* 확장 화면 맨 위 띠 */
+.section-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.9rem;
+  border-left: 4px solid var(--yp);
+  border-radius: 6px;
+  background: var(--yp-soft);
+  color: var(--yp-strong);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.section-tag {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--yp);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.section-tag-sm {
+  padding: 0 0.4rem;
+  font-family: var(--font);
+  font-size: 0.7rem;
+  vertical-align: 1px;
+}
+
+/* 설정 화면의 영풍산업 샘플 칸 */
+.yp-panel {
+  border-color: var(--yp);
+  border-left: 4px solid var(--yp);
 }
 
 /* 상태 배지 */
@@ -150,7 +224,7 @@ ul.plain {
     margin-bottom: 0.5rem;
   }
 
-  .app-nav a.nav-group-start {
+  .app-nav .nav-group-label {
     margin-left: 0.25rem;
   }
 }

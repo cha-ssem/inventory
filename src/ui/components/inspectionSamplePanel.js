@@ -1,6 +1,7 @@
 import { generateRobotStock } from '../../data/inspectionSample.js'
 import { formatNumber, html, qs, setHtml } from '../dom.js'
 import { confirmDialog, notifyResult } from '../feedback.js'
+import { sectionTag } from '../inspectionFormat.js'
 
 const summary = ({ sites, robots, events }) => {
   const requests = new Set(events.map((e) => e.requestId)).size
@@ -11,7 +12,7 @@ const summary = ({ sites, robots, events }) => {
 export const mountInspectionSamplePanel = (slot, { store, inspection, connected }) => {
   setHtml(
     slot,
-    html`<div class="panel-head"><h2>영풍산업 현장점검 샘플</h2></div>
+    html`<div class="panel-head"><h2>영풍산업 현장점검 샘플</h2>${sectionTag()}</div>
       <p>
         수중 점검 로봇(ROVINS) 현장 8곳, 로봇 6대, 최근 2주 점검 기록을 불러옵니다. 로봇 부품 13종과 그 재고는 지금 입출고 데이터에
         <strong>더하기만</strong> 합니다 (이미 있는 부품은 그대로).

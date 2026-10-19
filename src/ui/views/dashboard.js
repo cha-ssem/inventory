@@ -4,6 +4,7 @@ import { dashboardStats, recentTransactions } from '../../domain/stats.js'
 import { buildStockRows } from '../../domain/stock.js'
 import { formatNumber, html, setHtml } from '../dom.js'
 import { txTable } from '../components/txTable.js'
+import { partNoLabel } from '../partTag.js'
 
 const CHART_DAYS = 7
 const LOW_LIST_LIMIT = 8
@@ -26,7 +27,7 @@ const lowStockList = (rows) => {
       <tbody>
         ${low.slice(0, LOW_LIST_LIMIT).map(
           (r) => html`<tr class="is-low">
-            <td class="mono">${r.partNo}</td>
+            <td class="mono">${partNoLabel(r.partNo)}</td>
             <td>${r.name}</td>
             <td class="num stock">${formatNumber(r.stock)}</td>
             <td class="num">${formatNumber(r.safetyStock)}</td>

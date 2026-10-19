@@ -6,7 +6,7 @@ import { html, qs, setHtml } from '../dom.js'
 import { toast } from '../feedback.js'
 import { robotCard, updateRobotCard } from '../components/monitorCards.js'
 import { mountLogUpload } from '../components/logUpload.js'
-import { priorityBadge } from '../inspectionFormat.js'
+import { priorityBadge, sectionBanner } from '../inspectionFormat.js'
 
 const TICK_MS = 1000
 const FEED_LIMIT = 8
@@ -39,7 +39,7 @@ export const renderMonitor = (container, { inspection, store }) => {
 
   setHtml(
     container,
-    html`<div class="page-head">
+    html`${sectionBanner()}<div class="page-head">
         <h1>센서 모니터링</h1>
         <div class="actions">
           <label class="check"><input type="checkbox" data-auto checked /> 기준을 넘으면 점검 요청 자동 생성</label>

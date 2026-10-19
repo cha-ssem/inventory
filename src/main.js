@@ -36,6 +36,9 @@ const routes = {
 
 const NAV_PARENT = { '/labels': '/parts', '/inbound-ocr': '/inbound', '/inspection': '/inspections' }
 
+// 영풍산업 확장 화면: 강조 색을 바꿔 기존 입출고 화면과 구별한다 (styles/inspection.css)
+const YOUNGPOONG_ROUTES = new Set(['/inspections', '/inspection', '/monitor'])
+
 const parseHash = () => {
   const [path, search = ''] = (window.location.hash.slice(1) || '/').split('?')
   return { path: routes[path] ? path : '/', query: new URLSearchParams(search) }
@@ -85,6 +88,7 @@ const start = () => {
     const view = document.createElement('div')
     app.replaceChildren(view)
     highlightNav(path)
+    document.body.dataset.section = YOUNGPOONG_ROUTES.has(path) ? 'youngpoong' : 'inventory'
     try {
       cleanup = routes[path](view, { store, inspection, sync, query, navigate }) || null
     } catch (error) {

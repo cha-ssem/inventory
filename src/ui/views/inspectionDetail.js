@@ -6,7 +6,7 @@ import { formatNumber, html, setHtml } from '../dom.js'
 import { notifyResult, toast } from '../feedback.js'
 import { openCompleteForm } from '../components/completeForm.js'
 import { openAssignForm, openCancelForm, openStartForm } from '../components/inspectionForms.js'
-import { priorityBadge, resultBadge, robotLabel, siteLabel, sourceLabel, statusBadge } from '../inspectionFormat.js'
+import { priorityBadge, resultBadge, robotLabel, sectionBanner, siteLabel, sourceLabel, statusBadge } from '../inspectionFormat.js'
 
 const ACTION_BUTTONS = {
   ASSIGN: { label: '담당자 배정', kind: 'btn-primary' },
@@ -67,7 +67,7 @@ const historyView = (request) => html`<section class="panel">
   </ol>
 </section>`
 
-const detailView = (request, { sites, robots }, store) => html`<div class="page-head">
+const detailView = (request, { sites, robots }, store) => html`${sectionBanner()}<div class="page-head">
     <h1>${request.title}</h1>
     <div class="actions">
       ${availableActions(request.status).map((type) => html`<button type="button" class="btn ${ACTION_BUTTONS[type].kind}" data-flow="${type}">${ACTION_BUTTONS[type].label}</button>`)}
@@ -104,7 +104,7 @@ export const renderInspectionDetail = (container, { store, inspection, query }) 
   const draw = () => {
     const request = inspection.getRequest(requestId)
     if (!request) {
-      setHtml(container, html`<div class="page-head"><h1>현장점검</h1></div><section class="panel"><div class="empty">점검 요청을 찾을 수 없습니다. <a href="#/inspections">목록으로</a></div></section>`)
+      setHtml(container, html`${sectionBanner()}<div class="page-head"><h1>현장점검</h1></div><section class="panel"><div class="empty">점검 요청을 찾을 수 없습니다. <a href="#/inspections">목록으로</a></div></section>`)
       return
     }
     setHtml(container, detailView(request, inspection.getState(), store))
