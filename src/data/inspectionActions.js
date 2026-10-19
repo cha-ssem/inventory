@@ -53,20 +53,37 @@ export const revertSkippedCompletion = ({ store, inspection }, requestId, eventI
 }
 
 const MONITOR_ACTOR = '센서 감시'
+const NOT_DEPLOYED = '현장에 배치되지 않았거나, 로봇·현장이 사용 중지되어 점검 요청을 만들 수 없습니다.'
 
-// 센서·로그 위반을 점검 요청으로 기록한다 (중복·대기 시간 판단은 planAlerts)
-export const raiseAlerts = (inspection, violations, { now, source = 'SENSOR' }) => {
-  if (violations.length === 0) return { created: [], recurred: 0 }
-  const actions = planAlerts(violations, inspection.listRequests(), now, { source })
-  const created = []
-  let recurred = 0
-  actions.forEach((action) => {
-    if (action.kind === 'REQUEST') {
-      const result = inspection.addRequest(action.input, MONITOR_ACTOR)
-      if (result.ok) created.push(result.value)
-    } else if (inspection.transition(action.requestId, 'RECUR', { reading: action.reading }, MONITOR_ACTOR).ok) {
-      recurred += 1
-    }
+// 지금 로봇·현장 정보로 바꾼다 (화면을 연 뒤 로봇이 옮겨졌거나 사용 중지된 경우)
+const withLatestRobot = (violations, { robots, sites }) =>
+  violations.map((v) => {
+    const robot = robots.find((r) => r.robotId === v.robot.robotId)
+    const site = robot && sites.find((s) => s.siteId === robot.siteId)
+    const usable = robot && robot.active !== false && site && site.active !== false
+    return usable ? { ...v, robot } : { ...v, error: NOT_DEPLOYED }
   })
-  return { created, recurred }
+
+const applyAlert = (inspection, action, result) => {
+  if (action.kind === 'RECUR') {
+    const recur = inspection.transition(action.requestId, 'RECUR', { reading: action.reading }, MONITOR_ACTOR)
+    return recur.ok ? { ...result, recurred: result.recurred + 1, warnings: recur.warning ? [...result.warnings, recur.warning] : result.warnings } : result
+  }
+  const added = inspection.addRequest(action.input, MONITOR_ACTOR)
+  if (added.ok) return { ...result, created: [...result.created, added.value], warnings: added.warning ? [...result.warnings, added.warning] : result.warnings }
+  if (added.code === 'DUPLICATE_ALERT') return result
+  return { ...result, failed: [...result.failed, { key: `${action.input.robotId}|${action.input.ruleId}`, error: added.error }] }
+}
+
+// 센서·로그 위반을 점검 요청으로 기록한다 (중복·대기 시간 판단은 planAlerts, 시각은 저장소 시계).
+// 돌려주는 값: created(새 요청), recurred(재발생 수), warnings(저장 경고), failed(만들지 못한 것과 이유)
+export const raiseAlerts = (inspection, violations, { source = 'SENSOR' } = {}) => {
+  const empty = { created: [], recurred: 0, warnings: [], failed: [] }
+  if (violations.length === 0) return empty
+  inspection.refresh()
+  const checked = withLatestRobot(violations, inspection.getState())
+  const failed = checked.filter((v) => v.error).map((v) => ({ key: `${v.robot.robotId}|${v.rule.id}`, error: v.error }))
+  const usable = checked.filter((v) => !v.error)
+  const actions = planAlerts(usable, inspection.listRequests(), inspection.now(), { source })
+  return actions.reduce((result, action) => applyAlert(inspection, action, result), { ...empty, failed })
 }

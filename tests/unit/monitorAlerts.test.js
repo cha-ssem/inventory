@@ -51,6 +51,14 @@ describe('planAlerts', () => {
     expect(planAlerts([violation, violation], [], NOW)).toHaveLength(1)
   })
 
+  it('열린 요청 시각이 미래(다른 기기 시계가 빠름)면 대기 시간이 지난 것으로 본다', () => {
+    expect(planAlerts([violation], [openRequest({ requestedAt: at(-60) })], NOW)).toHaveLength(1)
+  })
+
+  it('재발생이 50번 쌓인 요청에는 더 기록하지 않는다 (저장 공간 보호)', () => {
+    expect(planAlerts([violation], [openRequest({ recurCount: 50, lastRecurAt: at(30) })], NOW)).toEqual([])
+  })
+
   it('로그 분석에서 온 위반은 출처를 LOG로 남긴다', () => {
     const [action] = planAlerts([violation], [], NOW, { source: 'LOG' })
     expect(action.input).toMatchObject({ source: 'LOG', title: '로그 분석: 누수 감지 (V1 영상 1호기)' })

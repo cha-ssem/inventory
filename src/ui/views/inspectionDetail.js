@@ -21,7 +21,7 @@ const EVENT_TEXT = {
   START: () => '점검 시작',
   COMPLETE: () => '점검 완료',
   CANCEL: (e) => `취소: ${e.payload.reason}`,
-  RECUR: (e) => `같은 이상 다시 감지${readingText(e.payload.reading)}`,
+  RECUR: (e) => `같은 이상 다시 감지${readingText(e.payload.reading)}${e.mergedFrom ? ' (다른 기기에서 감지한 요청을 합침)' : ''}`,
 }
 
 function readingText(reading) {

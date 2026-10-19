@@ -1,4 +1,4 @@
-import { canTransition, createRequestEvent, createTransitionEvent, foldRequests, sortRequests } from '../domain/inspection/flow.js'
+import { canTransition, createRequestEvent, createTransitionEvent, foldRequests, isOpenStatus, sortRequests } from '../domain/inspection/flow.js'
 import { generateInspectionSample } from './inspectionSample.js'
 
 export const INSPECTION_STORAGE_KEY = 'samkwang-inventory:inspection:v1'
@@ -64,8 +64,14 @@ export const createInspectionStore = ({ storage, now = () => new Date().toISOStr
 
   const context = (actor) => ({ now: now(), makeId, actor })
 
+  // 같은 로봇·기준의 자동 요청이 이미 열려 있는지 (저장 직전 최신 상태로 한 번 더 확인)
+  const hasOpenAutoRequest = ({ source, ruleId, robotId }) =>
+    source !== undefined && source !== 'MANUAL' && Boolean(ruleId) &&
+    [...getRequests().values()].some((r) => r.source !== 'MANUAL' && r.ruleId === ruleId && r.robotId === robotId && isOpenStatus(r.status))
+
   const addRequest = (input, actor = '') => {
     syncFromStorage()
+    if (hasOpenAutoRequest(input)) return { ok: false, code: 'DUPLICATE_ALERT', error: '같은 이상으로 열린 점검 요청이 이미 있습니다.' }
     const result = createRequestEvent(input, state, context(actor))
     return result.ok ? appendEvent(result.value) : result
   }
@@ -105,6 +111,9 @@ export const createInspectionStore = ({ storage, now = () => new Date().toISOStr
     reload,
     applyRemote,
     addRequest,
+    // 다른 탭이 방금 저장한 내용을 알림 없이 읽는다 (자동 요청 판단 직전)
+    refresh: syncFromStorage,
+    now,
     checkTransition,
     commitEvent,
     transition,

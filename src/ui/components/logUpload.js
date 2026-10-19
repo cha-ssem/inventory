@@ -16,8 +16,8 @@ const segmentTable = (segments, robots) => {
         <tbody>
           ${segments.map(
             (s, i) => html`<tr>
-              <td><input type="checkbox" data-segment="${i}" checked aria-label="${name(s.robotId)} ${s.rule.title} 선택" /></td>
-              <td>${name(s.robotId)}</td>
+              <td>${s.deployed ? html`<input type="checkbox" data-segment="${i}" checked aria-label="${name(s.robotId)} ${s.rule.title} 선택" />` : ''}</td>
+              <td>${name(s.robotId)}${s.deployed ? '' : html` <span class="muted">(본사 정비 중이라 요청 불가)</span>`}</td>
               <td>${priorityBadge(s.rule.priority)} ${s.rule.title}</td>
               <td class="nowrap">${formatDateTime(s.from)} ~ ${formatDateTime(s.to)}</td>
               <td class="num">${formatNumber(s.count)}</td>
@@ -56,7 +56,8 @@ export const mountLogUpload = (slot, { inspection, onViolations }) => {
       if (!parsed.ok) return toast(parsed.error, 'error')
       segments = analyzeLog(parsed.rows, robots())
       const skipped = parsed.skipped > 0 ? ` · 건너뛴 행 ${formatNumber(parsed.skipped)}개 (${parsed.errors[0]})` : ''
-      qs(slot, '.log-summary').textContent = `${formatNumber(parsed.rows.length)}행 분석 · 기준을 넘은 구간 ${segments.length}개${skipped}`
+      const duplicates = parsed.duplicates > 0 ? ` · 같은 시각 중복 행 ${formatNumber(parsed.duplicates)}개는 하나로 합침` : ''
+      qs(slot, '.log-summary').textContent = `${formatNumber(parsed.rows.length)}행 분석 · 기준을 넘은 구간 ${segments.length}개${skipped}${duplicates}`
       setHtml(qs(slot, '.log-result'), segmentTable(segments, robots()))
     } catch (error) {
       console.error('로그 분석 실패:', error)
@@ -70,8 +71,8 @@ export const mountLogUpload = (slot, { inspection, onViolations }) => {
     const violations = chosen
       .map((s) => ({ robot: robots().find((r) => r.robotId === s.robotId), rule: s.rule, reading: { metric: s.rule.metric, value: s.worst } }))
       .filter((v) => v.robot)
-    const { created, recurred } = onViolations(violations)
-    if (created.length === 0 && recurred === 0) toast('이미 같은 내용의 열린 점검 요청이 있습니다.', 'info')
+    const { created, recurred, failed } = onViolations(violations)
+    if (created.length === 0 && recurred === 0 && failed.length === 0) toast('이미 같은 내용의 열린 점검 요청이 있습니다.', 'info')
   }
 
   const onClick = (event) => {

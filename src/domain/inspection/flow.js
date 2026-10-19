@@ -168,23 +168,53 @@ const APPLY = {
 
 const byTime = (a, b) => a.at.localeCompare(b.at) || (a.type === REQUEST ? -1 : b.type === REQUEST ? 1 : a.id.localeCompare(b.id))
 
+const isAutoRequest = (event) => event.type === REQUEST && event.payload.source !== 'MANUAL' && Boolean(event.payload.ruleId)
+
+// 같은 로봇·같은 기준으로 이미 열린 자동 요청 (여러 기기가 동시에 같은 이상을 감지한 경우를 찾는다)
+const openAutoTwin = (requests, event) =>
+  [...requests.values()].find(
+    (r) => r.source !== 'MANUAL' && r.ruleId === event.payload.ruleId && r.robotId === event.payload.robotId && isOpenStatus(r.status),
+  )
+
+// 다른 기기의 같은 자동 요청은 앞 요청의 재발생으로 합친다 (동기화 뒤 어느 기기에서 봐도 1건)
+const mergeTwin = (twin, event) => ({
+  ...twin,
+  ...APPLY[RECUR](twin, { ...event, payload: { reading: event.payload.reading } }),
+  history: [...twin.history, { ...event, type: RECUR, mergedFrom: event.requestId }],
+})
+
+const applyEvent = (current, event) => {
+  const nextStatus = TRANSITIONS[current.status]?.[event.type]
+  if (!nextStatus) return event.type === RECUR ? current : { ...current, skipped: [...current.skipped, event] }
+  return { ...current, ...APPLY[event.type](current, event), status: nextStatus, history: [...current.history, event] }
+}
+
 // 이벤트를 시각 순서로 접어서 요청별 현재 상태를 만든다.
 // 허용되지 않는 순서의 이벤트(다른 기기가 먼저 완료한 뒤의 완료 등)는 반영하지 않고 skipped에 모은다.
+// 합쳐진 자동 요청(aliases)에 남은 작업도 반영하지 않고 앞 요청의 skipped에 남긴다.
 export const foldRequests = (events) => {
   const requests = new Map()
+  const aliases = new Map()
   ;[...events].sort(byTime).forEach((event) => {
     if (event.type === REQUEST) {
-      if (!requests.has(event.requestId)) requests.set(event.requestId, startRequest(event))
+      if (requests.has(event.requestId) || aliases.has(event.requestId)) return
+      const twin = isAutoRequest(event) ? openAutoTwin(requests, event) : null
+      if (twin) {
+        aliases.set(event.requestId, twin.requestId)
+        requests.set(twin.requestId, mergeTwin(twin, event))
+      } else {
+        requests.set(event.requestId, startRequest(event))
+      }
+      return
+    }
+    const alias = aliases.get(event.requestId)
+    if (alias) {
+      const primary = requests.get(alias)
+      if (event.type !== RECUR) requests.set(alias, { ...primary, skipped: [...primary.skipped, event] })
       return
     }
     const current = requests.get(event.requestId)
-    if (!current) return
-    const nextStatus = TRANSITIONS[current.status]?.[event.type]
-    if (!nextStatus) {
-      if (event.type !== RECUR) requests.set(event.requestId, { ...current, skipped: [...current.skipped, event] })
-      return
-    }
-    requests.set(event.requestId, { ...current, ...APPLY[event.type](current, event), status: nextStatus, history: [...current.history, event] })
+    if (current) requests.set(event.requestId, applyEvent(current, event))
   })
   return requests
 }

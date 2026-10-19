@@ -235,3 +235,41 @@ describe('기기 간 시계 차이·충돌', () => {
     expect(result).toMatchObject({ ok: false, error: expect.stringMatching(/너무 깁니다/) })
   })
 })
+
+describe('여러 기기의 자동 요청 합치기', () => {
+  const sensor = (overrides = {}) => ({ ...requestInput, source: 'SENSOR', ruleId: 'leak', reading: { metric: 'leak', value: 1 }, ...overrides })
+
+  it('같은 로봇·기준의 자동 요청이 이미 열려 있으면, 나중 요청은 재발생으로 합쳐 하나만 보인다', () => {
+    const a = newRequest(sensor(), '2026-10-19T01:00:00.000Z')
+    const b = newRequest(sensor(), '2026-10-19T01:00:05.000Z')
+    const requests = foldRequests([b, a])
+    expect(requests.size).toBe(1)
+    expect(requests.get(a.requestId)).toMatchObject({ recurCount: 1, lastRecurAt: '2026-10-19T01:00:05.000Z', status: 'REQUESTED' })
+  })
+
+  it('합쳐진 요청에 다른 기기가 남긴 작업은 반영하지 않고 skipped로 남긴다', () => {
+    const a = newRequest(sensor(), '2026-10-19T01:00:00.000Z')
+    const b = newRequest(sensor(), '2026-10-19T01:00:05.000Z')
+    const assignB = { id: 'x', requestId: b.requestId, type: 'ASSIGN', at: '2026-10-19T01:01:00.000Z', actor: '', payload: { assignee: '이로봇', dueDate: '' } }
+    const merged = foldRequests([a, b, assignB]).get(a.requestId)
+    expect(merged.status).toBe('REQUESTED')
+    expect(merged.skipped.map((e) => e.id)).toEqual(['x'])
+  })
+
+  it('앞 요청이 끝났으면 새 요청으로 본다', () => {
+    let events = [newRequest(sensor(), '2026-10-19T01:00:00.000Z')]
+    events = step(events, 'CANCEL', { reason: '오작동' }, '2026-10-19T01:30:00.000Z')
+    const later = newRequest(sensor(), '2026-10-19T02:00:00.000Z')
+    expect(foldRequests([...events, later]).size).toBe(2)
+  })
+
+  it('직접 등록한 요청과 다른 기준·다른 로봇은 합치지 않는다', () => {
+    const list = [
+      newRequest(sensor()),
+      newRequest(sensor({ ruleId: 'battery-low', reading: { metric: 'battery', value: 10 } })),
+      newRequest(requestInput),
+      newRequest(requestInput),
+    ]
+    expect(foldRequests(list).size).toBe(4)
+  })
+})

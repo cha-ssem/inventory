@@ -74,23 +74,26 @@ describe('raiseAlerts', () => {
   const robot = { robotId: 'RV-02', model: 'V1', siteId: 'ST-07', name: 'V1 영상 2호기' }
   const violation = { robot, rule: leakRule, reading: { metric: 'leak', value: 1 } }
 
-  it('위반을 센서 점검 요청으로 기록하고, 다시 생기면 재발생으로 남긴다', () => {
-    const { inspection } = setup()
-    const first = raiseAlerts(inspection, [violation], { now: NOW })
+  it('위반을 센서 점검 요청으로 기록하고, 대기 시간이 지나 다시 생기면 재발생으로 남긴다', () => {
+    let clock = NOW
+    let saved = null
+    const storage = { load: () => saved, save: (st) => ((saved = st), true), clear: () => true }
+    const inspection = createInspectionStore({ storage, now: () => clock, makeId: (() => { let n = 0; return () => `c-${++n}` })() })
+    inspection.loadSample()
+    const first = raiseAlerts(inspection, [violation])
     expect(first.created).toHaveLength(1)
     const request = inspection.getRequest(first.created[0].requestId)
     expect(request).toMatchObject({ source: 'SENSOR', priority: 'HIGH', ruleId: 'leak', status: 'REQUESTED', requestedBy: '센서 감시' })
 
-    const soon = raiseAlerts(inspection, [violation], { now: NOW })
-    expect(soon).toEqual({ created: [], recurred: 0 })
-    const later = raiseAlerts(inspection, [violation], { now: '2026-10-19T09:30:00.000Z' })
-    expect(later.recurred).toBe(1)
+    expect(raiseAlerts(inspection, [violation])).toMatchObject({ created: [], recurred: 0 })
+    clock = '2026-10-19T09:30:00.000Z'
+    expect(raiseAlerts(inspection, [violation]).recurred).toBe(1)
   })
 
   it('위반이 없으면 아무것도 하지 않는다', () => {
     const { inspection } = setup()
     const before = inspection.getState()
-    expect(raiseAlerts(inspection, [], { now: NOW })).toEqual({ created: [], recurred: 0 })
+    expect(raiseAlerts(inspection, [])).toEqual({ created: [], recurred: 0, warnings: [], failed: [] })
     expect(inspection.getState()).toBe(before)
   })
 })
@@ -129,5 +132,50 @@ describe('완료 충돌·원자성', () => {
     expect(store.getStockMap().get('YP-SP-003')).toBe(before)
     expect(pendingReverts(store, inspection.getRequest(requestId))).toEqual([])
     expect(revertSkippedCompletion({ store, inspection }, requestId, mine.id)).toMatchObject({ ok: true, reverted: 0 })
+  })
+})
+
+describe('raiseAlerts 리뷰 반영', () => {
+  const leakRule = { id: 'leak', metric: 'leak', kind: 'BOOL', threshold: 1, windowN: 1, priority: 'HIGH', title: '누수 감지', cooldownMin: 10 }
+  const violationFor = (robot) => ({ robot, rule: leakRule, reading: { metric: 'leak', value: 1 } })
+
+  it('저장소 시계로 대기 시간을 판단해서, 여러 번 불러도 대기 시간 안에는 재발생을 남기지 않는다', () => {
+    const { inspection } = setup()
+    const robot = inspection.getState().robots.find((r) => r.robotId === 'RV-02')
+    raiseAlerts(inspection, [violationFor(robot)])
+    for (let i = 0; i < 5; i += 1) expect(raiseAlerts(inspection, [violationFor(robot)]).recurred).toBe(0)
+  })
+
+  it('같은 저장소를 쓰는 다른 탭이 방금 만든 요청을 보고 중복을 만들지 않는다', () => {
+    let saved = null
+    const shared = { load: () => saved, save: (s) => ((saved = s), true), clear: () => true }
+    let n = 0
+    const tabA = createInspectionStore({ storage: shared, now: () => NOW, makeId: () => `a-${++n}` })
+    tabA.loadSample()
+    const tabB = createInspectionStore({ storage: shared, now: () => NOW, makeId: () => `b-${++n}` })
+    const robot = tabA.getState().robots.find((r) => r.robotId === 'RV-02')
+    raiseAlerts(tabA, [violationFor(robot)])
+    expect(raiseAlerts(tabB, [violationFor(robot)]).created).toHaveLength(0)
+    expect(tabB.listRequests({ status: 'open' }).filter((r) => r.ruleId === 'leak' && r.robotId === 'RV-02')).toHaveLength(1)
+  })
+
+  it('저장 경고를 돌려준다 (화면이 자동 생성을 끄도록)', () => {
+    let fail = false
+    let saved = null
+    const storage = { load: () => saved, save: (s) => (fail ? false : ((saved = s), true)), clear: () => true }
+    const inspection = createInspectionStore({ storage, now: () => NOW, makeId: (() => { let n = 0; return () => `x-${++n}` })() })
+    inspection.loadSample()
+    fail = true
+    const robot = inspection.getState().robots.find((r) => r.robotId === 'RV-02')
+    expect(raiseAlerts(inspection, [violationFor(robot)]).warnings[0]).toMatch(/저장하지 못했습니다/)
+  })
+
+  it('지금 로봇 정보로 판단한다: 본사로 돌아왔거나 사용 중지된 현장이면 만들지 않고 이유를 돌려준다', () => {
+    const { inspection } = setup()
+    const robot = inspection.getState().robots.find((r) => r.robotId === 'RV-02')
+    inspection.applyRemote((s) => ({ ...s, robots: s.robots.map((r) => (r.robotId === 'RV-02' ? { ...r, siteId: null } : r)) }))
+    const result = raiseAlerts(inspection, [violationFor(robot)])
+    expect(result.created).toHaveLength(0)
+    expect(result.failed).toEqual([{ key: 'RV-02|leak', error: expect.stringMatching(/현장/) }])
   })
 })

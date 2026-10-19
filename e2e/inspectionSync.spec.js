@@ -57,3 +57,36 @@ test('예전 Apps Script에 연결해도 입출고 동기화는 되고, 다시 �
   await expect(page.locator('#sync-badge')).toHaveAttribute('data-state', 'ok')
   await expect(page.locator('.sync-slot')).toContainText('다시 배포')
 })
+
+test('두 기기가 같은 로봇의 누수를 동시에 감지해도, 동기화 뒤 열린 요청은 하나다', async ({ browser }) => {
+  const server = createFakeAppsScript()
+  const one = await browser.newContext()
+  const two = await browser.newContext()
+  await server.attach(one)
+  await server.attach(two)
+  const a = await one.newPage()
+  const b = await two.newPage()
+  await loadInspectionSample(a)
+  await connect(a)
+  await connect(b)
+
+  // 동기화 전에 두 기기가 각자 감지 → 각자 요청을 만든다
+  for (const page of [a, b]) {
+    await page.goto('/#/monitor')
+    const card = page.locator('[data-robot-id="RV-02"]')
+    await card.getByLabel('넣을 이상').selectOption('leak')
+    await card.getByRole('button', { name: '이상 넣기' }).click()
+    await expect(page.getByTestId('alert-feed')).toContainText('누수 감지 (V1 영상 2호기)')
+  }
+  await syncNow(a)
+  await syncNow(b)
+  await syncNow(a)
+
+  for (const page of [a, b]) {
+    await page.goto('/#/inspections')
+    await expect(page.getByTestId('insp-open')).toContainText('4')
+    await expect(page.getByRole('link', { name: '누수 감지 (V1 영상 2호기)' })).toHaveCount(1)
+  }
+  await one.close()
+  await two.close()
+})

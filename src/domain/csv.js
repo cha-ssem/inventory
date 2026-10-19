@@ -80,7 +80,7 @@ const mapHeaders = (headerRow) =>
   )
 
 // 내보낼 때 수식 방지로 붙인 작은따옴표를 되돌린다
-const unescapeCell = (value) => (/^'[=+\-@\t\r]/.test(value) ? value.slice(1) : value)
+export const unescapeCell = (value) => (/^'[=+\-@\t\r]/.test(value) ? value.slice(1) : value)
 
 const rowToInput = (row, columns) =>
   Object.fromEntries(Object.entries(columns).map(([field, index]) => [field, unescapeCell(row[index] ?? '')]))
