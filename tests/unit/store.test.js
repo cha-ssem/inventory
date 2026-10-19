@@ -330,3 +330,15 @@ describe('recordOutboundBatch (점검에 쓴 부품 한 번에 출고)', () => {
     expect(store.recordOutboundBatch([])).toMatchObject({ ok: false })
   })
 })
+
+describe('recordOutboundBatch idPrefix', () => {
+  it('기록 ID를 접두어로 만들고, 이미 있는 ID면 다시 출고하지 않는다', () => {
+    let n = 0
+    const store = createStore({ storage: fakeStorage(), now: () => NOW, makeId: () => `id-${++n}` })
+    store.addPart({ partNo: 'YP-SP-001', name: '실링 키트', unit: 'SET', safetyStock: 0 })
+    store.recordInbound({ partNo: 'YP-SP-001', qty: 5 })
+    expect(store.recordOutboundBatch([{ partNo: 'YP-SP-001', qty: 1 }], { idPrefix: 'E-9' }).value[0].id).toBe('E-9-OUT-1')
+    expect(store.recordOutboundBatch([{ partNo: 'YP-SP-001', qty: 1 }], { idPrefix: 'E-9' })).toMatchObject({ ok: false })
+    expect(store.getStockMap().get('YP-SP-001')).toBe(4)
+  })
+})

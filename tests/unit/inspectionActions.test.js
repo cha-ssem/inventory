@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { completeInspection, raiseAlerts } from '../../src/data/inspectionActions.js'
+import { completeInspection, pendingReverts, raiseAlerts, revertSkippedCompletion } from '../../src/data/inspectionActions.js'
 import { createInspectionStore } from '../../src/data/inspectionStore.js'
 import { createStore } from '../../src/data/store.js'
 import { generateRobotStock } from '../../src/data/inspectionSample.js'
@@ -92,5 +92,42 @@ describe('raiseAlerts', () => {
     const before = inspection.getState()
     expect(raiseAlerts(inspection, [], { now: NOW })).toEqual({ created: [], recurred: 0 })
     expect(inspection.getState()).toBe(before)
+  })
+})
+
+describe('완료 충돌·원자성', () => {
+  it('출고 기록 ID는 완료 이벤트 ID에서 만든다 (어느 완료 때문에 나간 부품인지 추적)', () => {
+    const { store, inspection, requestId } = setup()
+    completeInspection({ store, inspection }, requestId, { result: 'OK', usedParts: [{ partNo: 'YP-SP-003', qty: 1 }] })
+    const completeEvent = inspection.getRequest(requestId).history.at(-1)
+    expect(store.getState().transactions.at(-1).id).toBe(`${completeEvent.id}-OUT-1`)
+  })
+
+  it('완료 저장이 실패하면 방금 한 출고를 취소 기록으로 되돌린다', () => {
+    const { store, inspection, requestId } = setup()
+    const before = store.getStockMap().get('YP-SP-003')
+    vi.spyOn(inspection, 'commitEvent').mockReturnValue({ ok: false, error: '저장 실패' })
+    const result = completeInspection({ store, inspection }, requestId, { result: 'OK', usedParts: [{ partNo: 'YP-SP-003', qty: 1 }] })
+    expect(result.ok).toBe(false)
+    expect(store.getStockMap().get('YP-SP-003')).toBe(before)
+    expect(store.getState().transactions.at(-1)).toMatchObject({ type: 'CANCEL' })
+  })
+
+  it('다른 기기가 먼저 완료해서 반영되지 않은 완료의 출고를 되돌린다 (한 번만)', () => {
+    const { store, inspection, requestId } = setup()
+    const before = store.getStockMap().get('YP-SP-003')
+    completeInspection({ store, inspection }, requestId, { result: 'OK', usedParts: [{ partNo: 'YP-SP-003', qty: 1 }] })
+    const mine = inspection.getRequest(requestId).history.at(-1)
+    // 다른 기기의 완료가 시각상 먼저였다고 가정: 내 완료가 skipped가 되도록 앞선 완료 이벤트를 받는다
+    const earlier = { ...mine, id: 'other-complete', at: new Date(Date.parse(mine.at) - 1).toISOString(), payload: { ...mine.payload, usedParts: [] } }
+    inspection.applyRemote((state) => ({ ...state, events: [...state.events, earlier] }))
+    const request = inspection.getRequest(requestId)
+    expect(request.skipped.map((e) => e.id)).toEqual([mine.id])
+    expect(pendingReverts(store, request)).toEqual([{ eventId: mine.id, txIds: [`${mine.id}-OUT-1`] }])
+
+    expect(revertSkippedCompletion({ store, inspection }, requestId, mine.id)).toMatchObject({ ok: true, reverted: 1 })
+    expect(store.getStockMap().get('YP-SP-003')).toBe(before)
+    expect(pendingReverts(store, inspection.getRequest(requestId))).toEqual([])
+    expect(revertSkippedCompletion({ store, inspection }, requestId, mine.id)).toMatchObject({ ok: true, reverted: 0 })
   })
 })

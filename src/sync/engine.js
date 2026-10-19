@@ -32,9 +32,10 @@ const assertShape = (condition, what) => {
 
 // 보낼 목록·연결 정보·진행 상태는 kv(localStorage)에 두어 새로고침하거나 다른 탭에서도 이어진다.
 // channels: 입출고 외의 데이터 묶음(예: 현장점검). 같은 연결로 입출고 다음에 차례로 동기화한다.
-//   { name, keys, sync(client, isCurrent), pending(), onConnect(mode), reset() }
+//   { name, label, keys, sync(client, isCurrent), pending(), onConnect(mode), reset() }
+//   채널이 실패해도 입출고 동기화 결과는 그대로 두고, 상태에 channelFailed와 채널 이름을 붙여 알린다.
 export const createSyncEngine = ({ store, kv, createClient, now = () => new Date().toISOString(), channels = [] }) => {
-  let status = { state: 'idle', message: '', lastSyncAt: null, rejected: [], conflict: false }
+  let status = { state: 'idle', message: '', lastSyncAt: null, rejected: [], conflict: false, channelFailed: false }
   let running = null
   let rerun = false
   let timers = null
@@ -88,16 +89,34 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     scheduleSoon()
   }
 
-  const failWith = (result) => {
-    if (result.code === 'NETWORK') return setStatus({ state: 'offline', message: '오프라인: 연결되면 자동으로 보냅니다.' })
+  const failWith = (result, { channelFailed = false } = {}) => {
+    if (result.code === 'NETWORK') return setStatus({ state: 'offline', channelFailed, message: '오프라인: 연결되면 자동으로 보냅니다.' })
     if (result.code === 'CONFLICT') {
       return setStatus({
         state: 'error',
         conflict: true,
+        channelFailed,
         message: '다른 기기가 그사이 시트를 바꿔서 전체 바꾸기를 멈췄습니다. 설정에서 어떻게 할지 고르세요.',
       })
     }
-    return setStatus({ state: 'error', message: result.error })
+    return setStatus({ state: 'error', channelFailed, message: result.error })
+  }
+
+  // 채널을 차례로 동기화한다. 첫 실패를 "채널 이름 동기화: 이유"로 돌려준다 (예외도 실패로 바꿈).
+  const runChannels = async (client, isCurrent, notices) => {
+    for (const channel of channels) {
+      let result
+      try {
+        result = await channel.sync(client, isCurrent)
+      } catch (error) {
+        console.error('채널 동기화 실패:', channel.name, error)
+        result = { ok: false, code: 'CLIENT_ERROR', error: error.message || '동기화 중 오류가 났습니다.' }
+      }
+      if (result?.code === ABORTED.code || !isCurrent()) return ABORTED
+      if (!result.ok) return { ...result, error: `${channel.label ?? channel.name} 동기화: ${result.error}` }
+      if (result.notice) notices.push(result.notice)
+    }
+    return null
   }
 
   // 보낸 스냅샷에 들어 있던 것만 보낼 목록에서 지운다 (요청 중에 들어온 변경은 남김)
@@ -176,9 +195,8 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     const client = createClient(current)
     setStatus({ state: 'syncing', message: '' })
     try {
-      const channelSteps = channels.map((channel) => (c, current) => channel.sync(c, current))
-      const steps = [meta().pendingReplace ? replaceRemote : null, pushOutbox, pullRemote, ...channelSteps].filter(Boolean)
-      let notice = ''
+      const steps = [meta().pendingReplace ? replaceRemote : null, pushOutbox, pullRemote].filter(Boolean)
+      const notices = []
       for (const step of steps) {
         const result = await step(client, isCurrent)
         if (result?.code === ABORTED.code || !isCurrent()) return getStatus()
@@ -186,9 +204,15 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
           failWith(result)
           return getStatus()
         }
-        notice = result.notice || notice
+        if (result.notice) notices.push(result.notice)
       }
-      setStatus({ state: 'ok', message: notice, conflict: false, lastSyncAt: now() })
+      const channelError = await runChannels(client, isCurrent, notices)
+      if (channelError === ABORTED) return getStatus()
+      if (channelError) {
+        failWith(channelError, { channelFailed: true })
+        return getStatus()
+      }
+      setStatus({ state: 'ok', message: notices.join(' '), conflict: false, channelFailed: false, lastSyncAt: now() })
     } catch (error) {
       console.error('동기화 실패:', error)
       if (isCurrent()) failWith({ code: 'CLIENT_ERROR', error: error.message || '동기화 중 오류가 났습니다.' })
@@ -255,6 +279,8 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     channels.forEach((channel) => channel.onConnect(mode))
     const result = await syncNow()
     if (result.state === 'ok') return { ok: true }
+    // 입출고는 맞춰졌고 채널만 실패했으면 연결은 유지한다 (다음 동기화 때 다시 시도)
+    if (result.channelFailed) return { ok: true, warning: result.message }
     const error = result.message
     disconnect()
     return { ok: false, error }

@@ -20,6 +20,8 @@ const USER_ACTIONS = [ASSIGN, START, COMPLETE, CANCEL]
 
 export const availableActions = (status) => USER_ACTIONS.filter((type) => TRANSITIONS[status]?.[type])
 
+export const canTransition = (status, type) => Boolean(TRANSITIONS[status]?.[type])
+
 export const isOpenStatus = (status) => OPEN_STATUSES.has(status)
 
 const fail = (error) => ({ ok: false, error })
@@ -28,14 +30,24 @@ const checkLength = (value, max, label) => (value.length > max ? `${label}은(�
 
 const newRequestId = (makeId) => `R-${makeId()}`
 
-const makeEvent = (requestId, type, payload, { now, makeId, actor = '' }) => ({
+const makeEvent = (requestId, type, payload, { now, makeId, actor = '' }, at = now) => ({
   id: makeId(),
   requestId,
   type,
-  at: now,
+  at,
   actor: cleanText(actor),
   payload,
 })
+
+const isPayloadTooLarge = (payload) => JSON.stringify(payload).length > INSPECTION_LIMITS.maxPayload
+const PAYLOAD_TOO_LARGE = '입력한 내용이 너무 깁니다. 점검·조치 내용을 줄여 주세요.'
+
+// 기기마다 시계가 달라도 같은 요청의 이벤트 순서가 뒤바뀌지 않도록, 마지막 이벤트보다 늦은 시각으로 찍는다
+const nextEventTime = (request, now) => {
+  const last = request.history.at(-1)?.at
+  if (!last || now > last) return now
+  return new Date(Date.parse(last) + 1).toISOString()
+}
 
 const validateRequestInput = (input, { sites, robots }) => {
   const site = sites.find((s) => s.siteId === input.siteId)
@@ -61,7 +73,9 @@ export const createRequestEvent = (input, masters, context) => {
     ...(input.ruleId ? { ruleId: String(input.ruleId) } : {}),
     ...(input.reading ? { reading: { metric: String(input.reading.metric), value: Number(input.reading.value) } } : {}),
   }
-  return { ok: true, value: makeEvent(newRequestId(context.makeId), REQUEST, { ...checked.value, ...extra }, context) }
+  const payload = { ...checked.value, ...extra }
+  if (isPayloadTooLarge(payload)) return fail(PAYLOAD_TOO_LARGE)
+  return { ok: true, value: makeEvent(newRequestId(context.makeId), REQUEST, payload, context) }
 }
 
 const validateUsedParts = (rawList = []) => {
@@ -120,7 +134,8 @@ export const createTransitionEvent = (request, type, input, context) => {
   if (!TRANSITIONS[request.status]?.[type]) return fail(`지금 상태(${request.status})에서는 ${ACTION_LABELS[type]}을(를) 할 수 없습니다.`)
   const payload = builder(input ?? {})
   if (payload.error) return fail(payload.error)
-  return { ok: true, value: makeEvent(request.requestId, type, payload.value, context) }
+  if (isPayloadTooLarge(payload.value)) return fail(PAYLOAD_TOO_LARGE)
+  return { ok: true, value: makeEvent(request.requestId, type, payload.value, context, nextEventTime(request, context.now)) }
 }
 
 const startRequest = (event) => ({
@@ -139,6 +154,7 @@ const startRequest = (event) => ({
   lastRecurAt: null,
   lastReading: event.payload.reading ?? null,
   history: [event],
+  skipped: [],
 })
 
 const APPLY = {
@@ -151,7 +167,8 @@ const APPLY = {
 
 const byTime = (a, b) => a.at.localeCompare(b.at) || (a.type === REQUEST ? -1 : b.type === REQUEST ? 1 : a.id.localeCompare(b.id))
 
-// 이벤트를 시각 순서로 접어서 요청별 현재 상태를 만든다. 허용되지 않는 순서의 이벤트는 건너뛴다.
+// 이벤트를 시각 순서로 접어서 요청별 현재 상태를 만든다.
+// 허용되지 않는 순서의 이벤트(다른 기기가 먼저 완료한 뒤의 완료 등)는 반영하지 않고 skipped에 모은다.
 export const foldRequests = (events) => {
   const requests = new Map()
   ;[...events].sort(byTime).forEach((event) => {
@@ -160,8 +177,12 @@ export const foldRequests = (events) => {
       return
     }
     const current = requests.get(event.requestId)
-    const nextStatus = current && TRANSITIONS[current.status]?.[event.type]
-    if (!nextStatus) return
+    if (!current) return
+    const nextStatus = TRANSITIONS[current.status]?.[event.type]
+    if (!nextStatus) {
+      if (event.type !== RECUR) requests.set(event.requestId, { ...current, skipped: [...current.skipped, event] })
+      return
+    }
     requests.set(event.requestId, { ...current, ...APPLY[event.type](current, event), status: nextStatus, history: [...current.history, event] })
   })
   return requests
@@ -185,5 +206,6 @@ const compareRequests = (a, b) => {
 }
 
 // 목록 화면 순서: 열린 요청 먼저(긴급 → 최근), 끝난 요청은 최근 순
-export const listRequests = (events, filters = {}) =>
-  [...foldRequests(events).values()].filter((r) => matches(r, filters)).sort(compareRequests)
+export const sortRequests = (requests, filters = {}) => [...requests].filter((r) => matches(r, filters)).sort(compareRequests)
+
+export const listRequests = (events, filters = {}) => sortRequests(foldRequests(events).values(), filters)

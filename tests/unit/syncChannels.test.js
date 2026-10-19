@@ -25,6 +25,7 @@ const memoryStorage = () => {
 
 const fakeChannel = (overrides = {}) => ({
   name: 'test',
+  label: '현장점검',
   keys: ['test:outbox'],
   sync: vi.fn(async () => ({ ok: true })),
   pending: vi.fn(() => 0),
@@ -81,12 +82,21 @@ describe('동기화 채널', () => {
     expect(engine.getStatus()).toMatchObject({ state: 'ok', message: '점검 기록 1건을 받지 않았습니다.' })
   })
 
-  it('채널이 실패하면 동기화 상태를 오류로 바꾼다', async () => {
+  it('채널이 실패하면 동기화 상태를 오류로 바꾸고 어느 채널인지 알린다', async () => {
     const { engine } = makeDevice([channel])
     await engine.connect(CONFIG, 'merge')
     channel.sync.mockResolvedValue({ ok: false, code: 'SERVER_ERROR', error: '점검 기록을 저장하지 못했습니다.' })
     const status = await engine.syncNow()
-    expect(status).toMatchObject({ state: 'error', message: '점검 기록을 저장하지 못했습니다.' })
+    expect(status).toMatchObject({ state: 'error', channelFailed: true, message: '현장점검 동기화: 점검 기록을 저장하지 못했습니다.' })
+  })
+
+  it('입출고 안내와 채널 안내를 함께 보여 준다', async () => {
+    const { engine, db } = makeDevice([channel])
+    await engine.connect(CONFIG, 'merge')
+    db.transactions = [{ id: 'bad', type: 'IN', partNo: 'X', qty: 'abc', createdAt: 'x' }]
+    channel.sync.mockResolvedValue({ ok: true, notice: '점검 안내' })
+    await engine.resolveConflict('download')
+    expect(engine.getStatus().message).toMatch(/형식이 잘못된 행 1개.*점검 안내/)
   })
 
   it('채널이 네트워크 오류면 오프라인으로 표시한다', async () => {
@@ -101,7 +111,7 @@ describe('동기화 채널', () => {
     await engine.connect(CONFIG, 'merge')
     channel.sync.mockRejectedValue(new Error('채널 오류'))
     const status = await engine.syncNow()
-    expect(status).toMatchObject({ state: 'error', message: '채널 오류' })
+    expect(status).toMatchObject({ state: 'error', message: '현장점검 동기화: 채널 오류' })
   })
 
   it('입출고 동기화가 실패하면 채널은 건너뛴다', async () => {
@@ -142,13 +152,20 @@ describe('동기화 채널', () => {
     expect(channel.reset).toHaveBeenCalled()
   })
 
-  it('연결 중 채널이 실패하면 연결을 되돌린다', async () => {
+  it('연결 중 채널만 실패하면 입출고 연결은 유지하고 경고로 알린다 (입출고 데이터는 이미 맞춰짐)', async () => {
     channel.sync.mockResolvedValue({ ok: false, code: 'SERVER_ERROR', error: '점검 시트 오류' })
     const { engine } = makeDevice([channel])
     const result = await engine.connect(CONFIG, 'merge')
-    expect(result).toEqual({ ok: false, error: '점검 시트 오류' })
-    expect(engine.getStatus().connected).toBe(false)
-    expect(channel.reset).toHaveBeenCalled()
+    expect(result).toEqual({ ok: true, warning: '현장점검 동기화: 점검 시트 오류' })
+    expect(engine.getStatus().connected).toBe(true)
+    expect(channel.reset).not.toHaveBeenCalled()
+  })
+
+  it('다음 동기화에서 채널이 회복되면 오류 표시를 지운다', async () => {
+    channel.sync.mockResolvedValueOnce({ ok: false, code: 'BUSY', error: '바쁨' })
+    const { engine } = makeDevice([channel])
+    await engine.connect(CONFIG, 'merge')
+    expect((await engine.syncNow())).toMatchObject({ state: 'ok', channelFailed: false })
   })
 
   it('채널 키 목록을 알려 준다 (다른 탭 변경 감지용)', () => {

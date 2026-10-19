@@ -203,3 +203,35 @@ describe('listRequests', () => {
     expect(listRequests([a, ...b], { siteId: 'ST-09' })).toEqual([])
   })
 })
+
+describe('기기 간 시계 차이·충돌', () => {
+  it('이 기기 시계가 늦어도 새 이벤트는 그 요청의 마지막 이벤트보다 뒤 시각으로 찍는다', () => {
+    let events = [newRequest(requestInput, '2026-10-19T05:00:00.000Z')]
+    events = step(events, 'ASSIGN', { assignee: '이로봇' }, '2026-10-19T05:10:00.000Z')
+    events = step(events, 'START', {}, '2026-10-19T05:20:00.000Z')
+    // 10분 늦은 기기에서 완료
+    events = step(events, 'COMPLETE', { result: 'OK' }, '2026-10-19T05:10:00.000Z')
+    const request = foldRequests(events).get(events[0].requestId)
+    expect(request.status).toBe('COMPLETED')
+    expect(events.at(-1).at).toBe('2026-10-19T05:20:00.001Z')
+  })
+
+  it('반영되지 않은 이벤트(다른 기기의 늦은 완료 등)는 skipped로 남긴다', () => {
+    let events = [newRequest()]
+    events = step(events, 'ASSIGN', { assignee: '이로봇' })
+    events = step(events, 'START')
+    events = step(events, 'COMPLETE', { result: 'OK' }, '2026-10-19T05:00:00.000Z')
+    const late = { ...events.at(-1), id: 'other', at: '2026-10-19T06:00:00.000Z', payload: { result: 'ISSUE', findings: '', actions: '', usedParts: [{ partNo: 'P', qty: 1 }] } }
+    const request = foldRequests([...events, late]).get(events[0].requestId)
+    expect(request.skipped.map((e) => e.id)).toEqual(['other'])
+  })
+
+  it('내용(JSON)이 서버 한도보다 크면 만들지 않는다', () => {
+    let events = step([newRequest()], 'ASSIGN', { assignee: '이로봇' })
+    events = step(events, 'START')
+    const request = foldRequests(events).get(events[0].requestId)
+    const quotes = '"'.repeat(1000)
+    const result = createTransitionEvent(request, 'COMPLETE', { result: 'OK', findings: quotes, actions: quotes }, ctx())
+    expect(result).toMatchObject({ ok: false, error: expect.stringMatching(/너무 깁니다/) })
+  })
+})

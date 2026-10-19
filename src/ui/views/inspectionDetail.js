@@ -1,8 +1,9 @@
+import { pendingReverts, revertSkippedCompletion } from '../../data/inspectionActions.js'
 import { formatDateTime } from '../../domain/dates.js'
 import { availableActions } from '../../domain/inspection/flow.js'
 import { METRICS } from '../../domain/inspection/constants.js'
 import { formatNumber, html, setHtml } from '../dom.js'
-import { toast } from '../feedback.js'
+import { notifyResult, toast } from '../feedback.js'
 import { openCompleteForm } from '../components/completeForm.js'
 import { openAssignForm, openCancelForm, openStartForm } from '../components/inspectionForms.js'
 import { priorityBadge, resultBadge, robotLabel, siteLabel, sourceLabel, statusBadge } from '../inspectionFormat.js'
@@ -39,10 +40,25 @@ const completionView = (request, store) => {
       <dt>점검 내용</dt><dd class="pre">${c.findings || '-'}</dd>
       <dt>조치 내용</dt><dd class="pre">${c.actions || '-'}</dd>
       <dt>사용 부품</dt>
-      <dd>${c.usedParts.length === 0 ? '없음' : html`<ul class="plain">${c.usedParts.map((u) => html`<li><span class="mono">${u.partNo}</span> ${partName(store, u.partNo)} × ${formatNumber(u.qty)}</li>`)}</ul>`}</dd>
+      <dd>${(c.usedParts ?? []).length === 0 ? '없음' : html`<ul class="plain">${c.usedParts.map((u) => html`<li><span class="mono">${u.partNo}</span> ${partName(store, u.partNo)} × ${formatNumber(u.qty)}</li>`)}</ul>`}</dd>
     </dl>
   </section>`
 }
+
+// 다른 기기가 먼저 완료해서 반영되지 않은 완료: 함께 나간 출고를 되돌릴 수 있게 한다
+const conflictView = (reverts) =>
+  reverts.length === 0
+    ? ''
+    : html`<section class="panel conflict-panel" data-testid="conflict">
+        <div class="panel-head"><h2>반영되지 않은 완료</h2></div>
+        <p>다른 기기에서 먼저 완료해서 아래 완료 기록은 반영되지 않았습니다. 그때 함께 출고된 부품이 재고에서 빠져 있습니다.</p>
+        ${reverts.map(
+          (r) => html`<div class="form-actions" style="justify-content:flex-start">
+            <span>출고 기록 ${r.txIds.length}건</span>
+            <button type="button" class="btn btn-danger btn-sm" data-revert="${r.eventId}">출고 되돌리기</button>
+          </div>`,
+        )}
+      </section>`
 
 const historyView = (request) => html`<section class="panel">
   <div class="panel-head"><h2>처리 이력</h2></div>
@@ -70,7 +86,7 @@ const detailView = (request, { sites, robots }, store) => html`<div class="page-
       <dt>요청</dt><dd>${formatDateTime(request.requestedAt)}${request.requestedBy ? ` · ${request.requestedBy}` : ''}</dd>
     </dl>
   </section>
-  ${completionView(request, store)} ${historyView(request)}`
+  ${conflictView(pendingReverts(store, request))} ${completionView(request, store)} ${historyView(request)}`
 
 const openFlow = (type, deps) => {
   const forms = { ASSIGN: openAssignForm, START: openStartForm, COMPLETE: openCompleteForm, CANCEL: openCancelForm }
@@ -95,6 +111,8 @@ export const renderInspectionDetail = (container, { store, inspection, query }) 
   }
 
   container.addEventListener('click', (event) => {
+    const revertId = event.target.closest('[data-revert]')?.dataset.revert
+    if (revertId) return notifyResult(revertSkippedCompletion({ store, inspection }, requestId, revertId), '함께 출고된 부품을 되돌렸습니다.')
     const type = event.target.closest('[data-flow]')?.dataset.flow
     const request = inspection.getRequest(requestId)
     if (!type || !request) return

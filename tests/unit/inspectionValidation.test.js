@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isValidEvent, isValidInspectionState, isValidRobot, isValidSite } from '../../src/domain/inspection/validation.js'
+import { isValidEvent, isValidInspectionState, isValidRobot, isValidSite, normalizeInspectionState } from '../../src/domain/inspection/validation.js'
 
 const AT = '2026-10-19T01:00:00.000Z'
 const site = { siteId: 'ST-01', name: '청솔댐 취수탑', sector: 'DAM', region: '경남', contact: '김현장', active: true, createdAt: AT, updatedAt: AT }
@@ -45,6 +45,16 @@ describe('isValidEvent', () => {
   it('요청 이벤트는 현장·로봇이 있어야 한다', () => {
     expect(isValidEvent({ ...request, payload: { ...request.payload, robotId: '' } })).toBe(false)
   })
+  it.each([
+    ['완료: 사용 부품 목록 없음', { type: 'COMPLETE', payload: { result: 'OK' } }],
+    ['완료: 수량이 0', { type: 'COMPLETE', payload: { result: 'OK', usedParts: [{ partNo: 'A', qty: 0 }] } }],
+    ['배정: 담당자 없음', { type: 'ASSIGN', payload: {} }],
+    ['취소: 사유가 글자가 아님', { type: 'CANCEL', payload: { reason: 1 } }],
+    ['재발생: 측정값 없음', { type: 'RECUR', payload: {} }],
+  ])('%s면 거부한다 (화면이 그리다 멈추지 않도록)', (_, change) => {
+    expect(isValidEvent({ ...request, id: 'E-9', ...change })).toBe(false)
+  })
+
   it('다른 구분의 이벤트는 내용 형식만 본다', () => {
     expect(isValidEvent({ ...request, id: 'E-2', type: 'START', payload: {} })).toBe(true)
   })
@@ -64,4 +74,20 @@ describe('isValidInspectionState', () => {
     expect(isValidInspectionState({ sites: [], robots: [{ ...robot, model: '?' }], events: [] })).toBe(false)
   })
   it('null을 거부한다', () => expect(isValidInspectionState(null)).toBe(false))
+})
+
+describe('normalizeInspectionState (불러올 때 살리기)', () => {
+  it('중복 ID와 형식이 틀린 항목만 빼고 나머지는 살린다', () => {
+    const later = { ...site, name: '새 이름', updatedAt: '2026-10-19T02:00:00.000Z' }
+    const data = { sites: [site, later, { ...site, siteId: 'bad' }], robots: [robot], events: [request, request, { ...request, id: 'E-2', type: '?' }] }
+    const result = normalizeInspectionState(data)
+    expect(result.sites).toEqual([later])
+    expect(result.events).toEqual([request])
+    expect(isValidInspectionState(result)).toBe(true)
+  })
+
+  it('배열이 아니면 손대지 않는다 (검증에서 거부됨)', () => {
+    expect(normalizeInspectionState({ sites: 'x' })).toEqual({ sites: 'x' })
+    expect(normalizeInspectionState(null)).toBe(null)
+  })
 })

@@ -42,6 +42,11 @@ describe('validateIncomingSite / Robot / Event', () => {
     ['이벤트 내용 형식', () => gs.validateIncomingEvent({ ...event, payload: 'text' })],
     ['이벤트 내용 크기', () => gs.validateIncomingEvent({ ...event, payload: { ...event.payload, detail: '가'.repeat(4001) } })],
     ['요청 내용', () => gs.validateIncomingEvent({ ...event, payload: { ...event.payload, title: '' } })],
+    ['이벤트 일시 형식(ISO 아님)', () => gs.validateIncomingEvent({ ...event, at: '2026' })],
+    ['완료 내용: 사용 부품 없음', () => gs.validateIncomingEvent({ ...event, type: 'COMPLETE', payload: { result: 'OK' } })],
+    ['완료 내용: 수량', () => gs.validateIncomingEvent({ ...event, type: 'COMPLETE', payload: { result: 'OK', usedParts: [{ partNo: 'A', qty: 0 }] } })],
+    ['배정 내용', () => gs.validateIncomingEvent({ ...event, type: 'ASSIGN', payload: {} })],
+    ['취소 내용', () => gs.validateIncomingEvent({ ...event, type: 'CANCEL', payload: { reason: 3 } })],
   ])('%s가 틀리면 거부한다', (_, check) => {
     expect(check().ok).toBe(false)
   })
@@ -83,6 +88,10 @@ describe('planInspectionPush', () => {
     expect(plain(plan.duplicateIds)).toEqual(['E-1'])
   })
 
+  it('목록이 배열이 아니면 거부한다', () => {
+    expect(() => gs.planInspectionPush(empty, { events: 'x' })).toThrow(/형식/)
+  })
+
   it('한 번에 너무 많이 보내면 거부한다', () => {
     const events = Array.from({ length: 501 }, (_, i) => ({ ...event, id: `E-${i}` }))
     expect(() => gs.planInspectionPush(empty, { events })).toThrow(/500건/)
@@ -114,6 +123,15 @@ describe('행 변환', () => {
     const broken = gs.eventToRow(event, LATER)
     broken[gs.EVENT_COLUMNS.indexOf('payload')] = '{broken'
     const result = gs.filterValidEvents([gs.rowToEvent(broken), gs.rowToEvent(gs.eventToRow({ ...event, id: 'E-2' }, LATER))])
+    expect(result.events).toHaveLength(1)
+    expect(result.invalidCount).toBe(1)
+  })
+})
+
+describe('filterValidEvents 중복', () => {
+  it('시트에 같은 ID 행이 두 개면 하나만 보낸다', () => {
+    const rows = [gs.eventToRow(event, LATER), gs.eventToRow(event, LATER)].map(gs.rowToEvent)
+    const result = gs.filterValidEvents(rows)
     expect(result.events).toHaveLength(1)
     expect(result.invalidCount).toBe(1)
   })

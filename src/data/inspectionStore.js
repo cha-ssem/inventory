@@ -1,4 +1,4 @@
-import { createRequestEvent, createTransitionEvent, foldRequests, listRequests as sortRequests } from '../domain/inspection/flow.js'
+import { canTransition, createRequestEvent, createTransitionEvent, foldRequests, sortRequests } from '../domain/inspection/flow.js'
 import { generateInspectionSample } from './inspectionSample.js'
 
 export const INSPECTION_STORAGE_KEY = 'samkwang-inventory:inspection:v1'
@@ -24,7 +24,7 @@ export const createInspectionStore = ({ storage, now = () => new Date().toISOStr
     return foldCache.map
   }
   const getRequest = (requestId) => getRequests().get(requestId)
-  const listRequests = (filters) => sortRequests(state.events, filters)
+  const listRequests = (filters) => sortRequests(getRequests().values(), filters)
 
   // 다른 탭이 저장한 내용을 덮어쓰지 않도록, 바꾸기 직전에 저장소의 최신 상태를 읽는다
   const syncFromStorage = () => {
@@ -76,9 +76,18 @@ export const createInspectionStore = ({ storage, now = () => new Date().toISOStr
     return createTransitionEvent(getRequest(requestId), type, input, context(actor))
   }
 
+  // checkTransition으로 만든 이벤트를 저장한다. 그사이 다른 탭·기기가 상태를 바꿨으면 거부한다.
+  const commitEvent = (event) => {
+    syncFromStorage()
+    const request = getRequest(event.requestId)
+    if (!request) return { ok: false, error: '점검 요청을 찾을 수 없습니다.' }
+    if (!canTransition(request.status, event.type)) return { ok: false, error: '그사이 요청 상태가 바뀌었습니다. 화면을 확인하고 다시 시도하세요.' }
+    return appendEvent(event)
+  }
+
   const transition = (requestId, type, input, actor = '') => {
     const result = checkTransition(requestId, type, input, actor)
-    return result.ok ? appendEvent(result.value) : result
+    return result.ok ? commitEvent(result.value) : result
   }
 
   const loadSample = () => commit(generateInspectionSample({ now: now() }), { ok: true }, REPLACED)
@@ -97,6 +106,7 @@ export const createInspectionStore = ({ storage, now = () => new Date().toISOStr
     applyRemote,
     addRequest,
     checkTransition,
+    commitEvent,
     transition,
     loadSample,
     resetAll,

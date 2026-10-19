@@ -79,3 +79,12 @@ describe('createStorage', () => {
     expect(storage.load()).toBeNull()
   })
 })
+
+describe('createStorage normalize', () => {
+  it('검증 전에 normalize로 고쳐서 불러온다', () => {
+    const backend = memoryBackend()
+    backend.setItem('k', JSON.stringify({ list: [1, 1, 2] }))
+    const storage = createStorage(backend, 'k', (d) => new Set(d.list).size === d.list.length, (d) => ({ list: [...new Set(d.list)] }))
+    expect(storage.load()).toEqual({ list: [1, 2] })
+  })
+})

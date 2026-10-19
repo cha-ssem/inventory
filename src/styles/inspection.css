@@ -154,3 +154,8 @@ ul.plain {
     margin-left: 0.25rem;
   }
 }
+
+.conflict-panel {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}

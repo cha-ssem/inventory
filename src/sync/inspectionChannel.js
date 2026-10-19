@@ -71,13 +71,21 @@ const joinNotices = (...notices) => notices.filter(Boolean).join(' ')
 export const createInspectionChannel = ({ store, kv, isConnected, requestSync }) => {
   const outbox = () => readJson(kv, INSPECTION_SYNC_KEYS.outbox, EMPTY_OUTBOX)
   const meta = () => ({ ...EMPTY_META, ...readJson(kv, INSPECTION_SYNC_KEYS.meta, EMPTY_META) })
-  const saveOutbox = (box) => writeJson(kv, INSPECTION_SYNC_KEYS.outbox, box)
+  // 보낼 목록을 저장하지 못하면(저장 공간 부족) 다음 동기화 때 지금 데이터를 모두 다시 보낸다 (서버가 중복은 거름)
+  let resendAll = false
+  const saveOutbox = (box) => {
+    const saved = writeJson(kv, INSPECTION_SYNC_KEYS.outbox, box)
+    if (!saved) resendAll = true
+    return saved
+  }
   const saveMeta = (changes) => writeJson(kv, INSPECTION_SYNC_KEYS.meta, { ...meta(), ...changes })
 
-  // 통째로 바뀌면(샘플 불러오기) 지금 데이터를 모두 보낸다. 시트에 이미 있는 이벤트는 서버가 중복으로 처리한다.
+  // 통째로 바뀌면(샘플 불러오기·지우기) 지금 데이터를 모두 보내고, 받은 위치를 처음으로 되돌려 시트 기록을 다시 받는다.
+  // (시트에 이미 있는 이벤트는 서버가 중복으로 처리하고, 받은 것은 합치기만 한다)
   const recordLocalChange = (change) => {
     if (!isConnected()) return
     saveOutbox(enqueue(outbox(), change.replaced ? store.getState() : change))
+    if (change.replaced) writeJson(kv, INSPECTION_SYNC_KEYS.meta, EMPTY_META)
     requestSync()
   }
 
@@ -92,7 +100,8 @@ export const createInspectionChannel = ({ store, kv, isConnected, requestSync })
       assertShape(Array.isArray(result.acceptedIds) && Array.isArray(result.duplicateIds) && Array.isArray(result.rejected), 'inspPush')
       const handled = [...result.acceptedIds, ...result.duplicateIds, ...result.rejected.map((r) => r.id)]
       const after = ackBatch(outbox(), batch, handled)
-      saveOutbox(after)
+      // 줄어든 목록을 저장하지 못하면 같은 묶음을 끝없이 다시 보내게 되므로 멈춘다
+      if (!saveOutbox(after)) return { ok: false, code: 'SAVE_FAILED', error: '브라우저 저장 공간이 부족해 보낸 기록을 정리하지 못했습니다.' }
       rejectedCount += result.rejected.length + (result.rejectedMasters?.length ?? 0)
       if (outboxSize(after) >= outboxSize(before)) {
         return { ok: false, code: 'NO_PROGRESS', error: '시트가 점검 기록을 처리하지 않았습니다. Apps Script 배포가 최신인지 확인하세요.' }
@@ -118,6 +127,12 @@ export const createInspectionChannel = ({ store, kv, isConnected, requestSync })
   }
 
   const sync = async (client, isCurrent) => {
+    if (resendAll) {
+      resendAll = false
+      if (!saveOutbox(enqueue(outbox(), store.getState()))) {
+        return { ok: false, code: 'SAVE_FAILED', error: '브라우저 저장 공간이 부족해 점검 변경을 보낼 목록에 넣지 못했습니다. 백업 후 불필요한 데이터를 지우세요.' }
+      }
+    }
     const pushed = await push(client, isCurrent)
     if (!pushed.ok) return pushed
     if (pushed.unsupported) return { ok: true, notice: UNSUPPORTED_NOTICE }
@@ -141,6 +156,7 @@ export const createInspectionChannel = ({ store, kv, isConnected, requestSync })
 
   return {
     name: 'inspection',
+    label: '현장점검',
     keys: Object.values(INSPECTION_SYNC_KEYS),
     pending: () => outboxSize(outbox()),
     recordLocalChange,

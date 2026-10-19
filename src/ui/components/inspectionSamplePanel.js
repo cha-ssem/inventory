@@ -30,7 +30,7 @@ export const mountInspectionSamplePanel = (slot, { store, inspection, connected 
   const confirmReplace = (title, confirmLabel) =>
     confirmDialog({
       title,
-      message: `지금 점검 데이터(${summary(inspection.getState())})가 바뀝니다. 입출고 기록은 지우지 않습니다.${connected() ? '\n구글 시트와 연결되어 있으면 다른 기기의 점검 기록은 다음 동기화 때 다시 합쳐집니다.' : ''}`,
+      message: `이 기기의 점검 데이터(${summary(inspection.getState())})가 바뀝니다. 입출고 기록은 지우지 않습니다.${connected() ? '\n구글 시트와 연결되어 있어서, 시트에 있는 점검 기록은 지우지 않고 다음 동기화 때 다시 받아 합칩니다.' : ''}`,
       confirmLabel,
       danger: true,
     })

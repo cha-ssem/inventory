@@ -68,6 +68,7 @@ export const INSPECTION_LIMITS = Object.freeze({
   maxDetail: 500,
   maxNote: 1000,
   maxUsedParts: 20,
+  maxPayload: 4000, // 이벤트 내용 JSON 글자 수 (apps-script/InspectionLogic.gs의 INSP_LIMITS.maxPayload와 같게)
 })
 
 export const SITE_ID_PATTERN = /^ST-\d{2,4}$/

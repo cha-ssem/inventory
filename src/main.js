@@ -1,7 +1,7 @@
 import { INSPECTION_STORAGE_KEY, createInspectionStore } from './data/inspectionStore.js'
 import { STORAGE_KEY, createStorage, getBrowserStorageBackend } from './data/storage.js'
 import { createStore } from './data/store.js'
-import { isValidInspectionState } from './domain/inspection/validation.js'
+import { isValidInspectionState, normalizeInspectionState } from './domain/inspection/validation.js'
 import { createSyncClient } from './sync/client.js'
 import { SYNC_KEYS, createSyncEngine } from './sync/engine.js'
 import { createInspectionChannel } from './sync/inspectionChannel.js'
@@ -62,7 +62,7 @@ const start = () => {
     onLocalChange: (change) => engineRef.sync?.recordLocalChange(change),
   })
   const inspection = createInspectionStore({
-    storage: createStorage(backend, INSPECTION_STORAGE_KEY, isValidInspectionState),
+    storage: createStorage(backend, INSPECTION_STORAGE_KEY, isValidInspectionState, normalizeInspectionState),
     onLocalChange: (change) => engineRef.inspectionChannel?.recordLocalChange(change),
   })
   // 점검 데이터는 입출고와 같은 구글 시트 연결로, 입출고 다음에 동기화한다

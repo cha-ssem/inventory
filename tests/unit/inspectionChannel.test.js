@@ -158,6 +158,41 @@ describe('점검 동기화 채널', () => {
     expect(server.db.events.some((e) => e.id === onlyB.id)).toBe(true)
   })
 
+  it('보낼 목록 저장에 실패하면(저장 공간 부족) 다음 동기화 때 전체를 다시 보낸다', async () => {
+    const server = fakeServer()
+    const a = makeDevice(server)
+    a.inspection.loadSample()
+    await a.engine.connect(CONFIG, 'merge')
+    const setItem = a.kv.setItem
+    a.kv.setItem = (k, v) => {
+      if (k === INSPECTION_SYNC_KEYS.outbox) throw new Error('QuotaExceededError')
+      return setItem(k, v)
+    }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { requestId } = a.inspection.addRequest(request).value
+    expect((await a.engine.syncNow()).message).toMatch(/저장 공간/)
+    a.kv.setItem = setItem
+    expect((await a.engine.syncNow()).state).toBe('ok')
+    expect(server.db.events.some((e) => e.requestId === requestId)).toBe(true)
+  })
+
+  it('보낸 뒤 목록을 저장하지 못하면 같은 묶음을 계속 보내지 않고 멈춘다', async () => {
+    const server = fakeServer()
+    const a = makeDevice(server)
+    a.inspection.loadSample()
+    await a.engine.connect(CONFIG, 'merge')
+    a.inspection.addRequest(request)
+    const setItem = a.kv.setItem
+    a.kv.setItem = (k, v) => {
+      if (k === INSPECTION_SYNC_KEYS.outbox) throw new Error('QuotaExceededError')
+      return setItem(k, v)
+    }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const status = await a.engine.syncNow()
+    expect(status.state).toBe('error')
+    expect(actions(server).filter((x) => x === 'inspPush').length).toBeLessThanOrEqual(3)
+  })
+
   it('연결하지 않았으면 보낼 목록을 만들지 않는다', () => {
     const server = fakeServer()
     const a = makeDevice(server)
@@ -175,6 +210,24 @@ describe('점검 동기화 채널', () => {
     expect(a.channel.pending()).toBeGreaterThan(0)
     await a.engine.syncNow()
     expect(server.db.events).toHaveLength(a.inspection.getState().events.length)
+  })
+
+  it('연결된 채로 점검 데이터를 지우면, 다음 동기화 때 시트의 기록을 처음부터 다시 받아 합친다', async () => {
+    const server = fakeServer()
+    const a = makeDevice(server)
+    a.inspection.loadSample()
+    await a.engine.connect(CONFIG, 'merge')
+    const b = makeDevice(server, { name: 'B' })
+    await b.engine.connect(CONFIG, 'merge')
+    const fromB = b.inspection.addRequest({ ...request, title: 'B 요청' }).value
+    await b.engine.syncNow()
+    await a.engine.syncNow()
+
+    a.inspection.resetAll()
+    expect(a.inspection.getState().events).toHaveLength(0)
+    await a.engine.syncNow()
+    expect(a.inspection.getState().events).toHaveLength(server.db.events.length)
+    expect(a.inspection.getRequest(fromB.requestId)).toBeDefined()
   })
 
   it('현장 정보를 고치면 수정일시가 최신인 쪽을 남긴다', async () => {
@@ -220,10 +273,9 @@ describe('점검 동기화 채널', () => {
     let failing = true
     const b = makeDevice(server, { name: 'B', storageOptions: { failSave: () => failing } })
     const result = await b.engine.connect(CONFIG, 'download')
-    expect(result.ok).toBe(false)
-    expect(result.error).toMatch(/저장하지 못했습니다/)
+    expect(result).toMatchObject({ ok: true, warning: expect.stringMatching(/저장하지 못했습니다/) })
     failing = false
-    expect(await b.engine.connect(CONFIG, 'download')).toEqual({ ok: true })
+    expect((await b.engine.syncNow()).state).toBe('ok')
     expect(b.inspection.getState().sites).toHaveLength(8)
   })
 

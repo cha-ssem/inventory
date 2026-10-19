@@ -52,6 +52,20 @@ describe('inspPush / inspPull', () => {
     expect(post('inspPull', { offset: 0 }).sites.map((s) => s.name)).toEqual(['새 이름'])
   })
 
+  it('새 현장 여러 개와 기존 현장 고치기를 한 번에 처리한다', () => {
+    const { post } = setup()
+    post('inspPush', { sites: [site] })
+    const second = { ...site, siteId: 'ST-02', name: '둘째' }
+    const third = { ...site, siteId: 'ST-03', name: '셋째' }
+    post('inspPush', { sites: [{ ...site, name: '고친 이름', updatedAt: '2026-10-19T02:00:00.000Z' }, second, third] })
+    expect(post('inspPull', { offset: 0 }).sites.map((s) => s.name)).toEqual(['고친 이름', '둘째', '셋째'])
+  })
+
+  it('목록 형식이 틀리면 서버 오류로 처리하고 시트는 그대로 둔다', () => {
+    const { post } = setup()
+    expect(post('inspPush', { events: 'x' })).toMatchObject({ ok: false, code: 'SERVER_ERROR' })
+  })
+
   it('입출고 리비전은 올리지 않는다 (입출고 전체 바꾸기 충돌과 무관)', () => {
     const { gas, post } = setup()
     post('inspPush', { events: [event('E-1')] })

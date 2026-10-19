@@ -29,11 +29,13 @@ function readEventIdAt(sheet, offset) {
   return fromTextCell(sheet.getRange(1 + offset, 1).getValue())
 }
 
+// 새 행은 한 번에 덧붙이고(시트 API 호출을 줄임), 기존 행 고치기는 한 행씩 쓴다 (드물게 일어남)
 function upsertRows(sheet, columns, upserts, toRowFn) {
-  upserts.forEach(function (u) {
-    var rowNumber = u.rowIndex === null ? sheet.getLastRow() + 1 : u.rowIndex + 2
-    writeRows(sheet, columns, rowNumber, [toRowFn(u.item)])
+  upserts.filter(function (u) { return u.rowIndex !== null }).forEach(function (u) {
+    writeRows(sheet, columns, u.rowIndex + 2, [toRowFn(u.item)])
   })
+  var added = upserts.filter(function (u) { return u.rowIndex === null }).map(function (u) { return toRowFn(u.item) })
+  writeRows(sheet, columns, sheet.getLastRow() + 1, added)
 }
 
 function handleInspPush(req) {

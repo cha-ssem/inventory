@@ -9,11 +9,15 @@ export const readJson = (kv, key, fallback) => {
   }
 }
 
+// 저장했으면 true (저장소가 없거나 실패하면 false)
 export const writeJson = (kv, key, value) => {
+  if (!kv) return false
   try {
-    if (value === null) kv?.removeItem(key)
-    else kv?.setItem(key, JSON.stringify(value))
+    if (value === null) kv.removeItem(key)
+    else kv.setItem(key, JSON.stringify(value))
+    return true
   } catch (error) {
     console.error('동기화 정보를 저장하지 못했습니다:', error)
+    return false
   }
 }

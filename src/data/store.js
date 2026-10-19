@@ -144,15 +144,18 @@ export const createStore = ({ storage, now = () => new Date().toISOString(), mak
     return appendTransaction(result.value, { after: stockCheck.after, low: stockCheck.low })
   }
 
-  // 점검에 쓴 부품: 모두 재고가 있을 때만 한 번에 출고한다 (같은 품번이 여러 줄이면 앞 줄 수량을 빼고 계산)
-  const recordOutboundBatch = (inputs) => {
+  // 점검에 쓴 부품: 모두 재고가 있을 때만 한 번에 출고한다 (같은 품번이 여러 줄이면 앞 줄 수량을 빼고 계산).
+  // idPrefix: 기록 ID를 "접두어-OUT-n"으로 만든다 (어느 점검 완료 때문에 나간 부품인지 추적, 같은 완료를 두 번 출고하지 않음)
+  const recordOutboundBatch = (inputs, { idPrefix } = {}) => {
     syncFromStorage()
     if (!Array.isArray(inputs) || inputs.length === 0) return fail('출고할 부품이 없습니다.')
+    const idAt = (index) => (idPrefix ? () => `${idPrefix}-OUT-${index + 1}` : makeId)
+    if (idPrefix && state.transactions.some((t) => t.id.startsWith(`${idPrefix}-OUT-`))) return fail('이미 출고한 점검 완료입니다.')
     const stock = new Map(getStockMap())
     const checked = inputs.map((input, index) => {
       const part = requireActivePart(input.partNo)
       if (!part.ok) return { index, error: part.error }
-      const result = createTransaction({ ...input, type: TX_TYPES.OUT }, { now: now(), makeId })
+      const result = createTransaction({ ...input, type: TX_TYPES.OUT }, { now: now(), makeId: idAt(index) })
       if (!result.ok) return { index, error: result.error }
       const stockCheck = checkOutbound(stock, part.part.partNo, result.value.qty, part.part.safetyStock)
       if (!stockCheck.ok) return { index, error: `${part.part.partNo}: ${stockCheck.error}` }
