@@ -7,6 +7,7 @@ import { isValidInspectionState, normalizeInspectionState } from './domain/inspe
 import { createSyncClient } from './sync/client.js'
 import { SYNC_KEYS, createSyncEngine } from './sync/engine.js'
 import { createInspectionChannel } from './sync/inspectionChannel.js'
+import { createReportChannel } from './sync/reportChannel.js'
 import { closeActiveModal, toast } from './ui/feedback.js'
 import { renderSyncBadge } from './ui/components/syncBadge.js'
 import { renderDashboard } from './ui/views/dashboard.js'
@@ -84,9 +85,19 @@ const start = () => {
     isConnected: () => Boolean(engineRef.sync?.getConfig()),
     requestSync: () => engineRef.sync?.requestSync(),
   })
-  const reports = createReportStore({ storage: createStorage(backend, REPORT_STORAGE_KEY, isValidReportState, normalizeReportState) })
-  const sync = createSyncEngine({ store, kv: backend, createClient: (config) => createSyncClient(config), channels: [inspectionChannel] })
-  Object.assign(engineRef, { sync, inspectionChannel })
+  const reports = createReportStore({
+    storage: createStorage(backend, REPORT_STORAGE_KEY, isValidReportState, normalizeReportState),
+    onLocalChange: (report) => engineRef.reportChannel?.recordLocalChange(report),
+  })
+  // 확정·제출한 보고서도 같은 연결로, 점검 다음에 동기화한다 (초안은 이 기기에만)
+  const reportChannel = createReportChannel({
+    store: reports,
+    kv: backend,
+    isConnected: () => Boolean(engineRef.sync?.getConfig()),
+    requestSync: () => engineRef.sync?.requestSync(),
+  })
+  const sync = createSyncEngine({ store, kv: backend, createClient: (config) => createSyncClient(config), channels: [inspectionChannel, reportChannel] })
+  Object.assign(engineRef, { sync, inspectionChannel, reportChannel })
   const app = document.getElementById('app')
   let cleanup = null
 

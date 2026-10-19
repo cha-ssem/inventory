@@ -1,6 +1,6 @@
 import { REPORT_STATUSES, createDraft, finalizeReport, markSubmitted as markReportSubmitted, reviseReport, updateDraft } from '../domain/report/report.js'
 
-// 점검 보고서는 점검 동기화와 저장 키를 나눈다 (동기화가 보고서를 건드리지 않도록). 시트에는 7단계 제출 때 올린다.
+// 점검 보고서는 점검 동기화와 저장 키를 나눈다. 확정·제출본은 보고서 동기화 채널(reportChannel.js)이 다른 기기와 주고받는다.
 export const REPORT_STORAGE_KEY = 'samkwang-inventory:reports:v1'
 
 const EMPTY = Object.freeze({ reports: [] })
@@ -8,7 +8,7 @@ const SAVE_FAILED = '브라우저에 저장하지 못했습니다. 저장 공간
 const NOT_FOUND = { ok: false, error: '보고서를 찾을 수 없습니다.' }
 
 const isValidReport = (r) =>
-  Boolean(r) && typeof r.reportId === 'string' && Boolean(REPORT_STATUSES[r.status]) && Boolean(r.body) && Boolean(r.snapshot)
+  Boolean(r) && typeof r.reportId === 'string' && typeof r.status === 'string' && Object.hasOwn(REPORT_STATUSES, r.status) && Boolean(r.body) && Boolean(r.snapshot)
 
 export const isValidReportState = (data) => Boolean(data) && Array.isArray(data.reports) && data.reports.every(isValidReport)
 
@@ -19,7 +19,8 @@ export const normalizeReportState = (data) =>
 const defaultMakeId = () =>
   globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 
-export const createReportStore = ({ storage, now = () => new Date().toISOString(), makeId = defaultMakeId }) => {
+// onLocalChange(report): 이 기기에서 보고서를 저장할 때마다 알린다 (동기화 채널이 확정·제출본만 골라 보낸다)
+export const createReportStore = ({ storage, now = () => new Date().toISOString(), makeId = defaultMakeId, onLocalChange }) => {
   let state = storage.load() ?? EMPTY
   const listeners = new Set()
 
@@ -41,7 +42,19 @@ export const createReportStore = ({ storage, now = () => new Date().toISOString(
     return result
   }
 
-  const upsert = (report) => commit([...state.reports.filter((r) => r.reportId !== report.reportId), report], { ok: true, value: report })
+  const upsert = (report) => {
+    const result = commit([...state.reports.filter((r) => r.reportId !== report.reportId), report], { ok: true, value: report })
+    if (result.ok) onLocalChange?.(report)
+    return result
+  }
+
+  // 다른 기기에서 받은 보고서를 합친다 (mergeFn(reports) → 새 목록, 바뀐 것이 없으면 같은 목록)
+  const applyRemote = (mergeFn) => {
+    syncFromStorage()
+    const next = mergeFn(state.reports)
+    if (next === state.reports) return { ok: true, changed: false }
+    return commit(next, { ok: true, changed: true })
+  }
 
   // 보고서 하나를 바꾸는 공통 흐름: 최신 상태 읽기 → 찾기 → 바꾸기(change가 { ok, value }) → 저장
   const modify = (reportId, change) => {
@@ -96,5 +109,5 @@ export const createReportStore = ({ storage, now = () => new Date().toISOString(
     return () => listeners.delete(listener)
   }
 
-  return { get, list, create, update, finalize, markSubmitted, revise, remove, reload, subscribe }
+  return { get, list, create, update, finalize, markSubmitted, revise, remove, reload, subscribe, applyRemote }
 }

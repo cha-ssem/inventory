@@ -124,7 +124,7 @@ export const loadAppsScript = ({ properties = {}, fetchResponse, mail = {}, tryL
     },
   })
   const dir = resolve(dirname(fileURLToPath(import.meta.url)), '../../apps-script')
-  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs', 'ReportLogic.gs', 'ReportSubmitLogic.gs', 'Code.gs', 'Ocr.gs', 'Inspection.gs', 'Report.gs']) {
+  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs', 'ReportLogic.gs', 'ReportSubmitLogic.gs', 'ReportSyncLogic.gs', 'Code.gs', 'Ocr.gs', 'Inspection.gs', 'Report.gs', 'ReportSync.gs']) {
     vm.runInContext(readFileSync(resolve(dir, file), 'utf-8'), context)
   }
   const post = (body) => JSON.parse(context.doPost({ postData: { contents: JSON.stringify(body) } }).text)

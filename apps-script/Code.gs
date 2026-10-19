@@ -1,6 +1,6 @@
 /**
  * 부품·점검 통합관리 - 구글 시트 연동 서버
- * 설치: 구글 시트 → 확장 프로그램 → Apps Script에 이 폴더의 파일(Code, Logic, Ocr, OcrLogic, Inspection, InspectionLogic, Report, ReportLogic, ReportSubmitLogic)을 붙여넣고 setup()을 한 번 실행한 뒤 웹 앱으로 배포한다.
+ * 설치: 구글 시트 → 확장 프로그램 → Apps Script에 이 폴더의 파일(Code, Logic, Ocr, OcrLogic, Inspection, InspectionLogic, Report, ReportLogic, ReportSubmitLogic, ReportSync, ReportSyncLogic)을 붙여넣고 setup()을 한 번 실행한 뒤 웹 앱으로 배포한다.
  * 모든 요청은 POST(본문 JSON)이며, 연결 토큰(스크립트 속성 APP_TOKEN)이 맞아야 처리한다.
  */
 
@@ -10,7 +10,7 @@ var REPLACE_LIMIT = 20000
 var LOCK_WAIT_MS = 20000
 var NUMBER_COLUMNS = { qty: true, safetyStock: true }
 // submitReport는 메일을 보내는 동안 잠금을 풀기 위해 Report.gs가 직접 잠근다
-var WRITE_ACTIONS = { push: true, replaceAll: true, saveMappings: true, inspPush: true }
+var WRITE_ACTIONS = { push: true, replaceAll: true, saveMappings: true, inspPush: true, reportPush: true }
 
 function doGet() {
   return jsonOutput({ ok: true, app: 'samkwang-inventory', message: '이 주소는 부품·점검 통합관리 앱 전용입니다. 요청은 POST로 보내세요.' })
@@ -37,7 +37,7 @@ function handleRequest(body) {
   var handlers = {
     ping: handlePing, pull: handlePull, push: handlePush, replaceAll: handleReplaceAll,
     ocr: handleOcr, saveMappings: handleSaveMappings, inspPush: handleInspPush, inspPull: handleInspPull,
-    reportDraft: handleReportDraft, submitReport: handleSubmitReport,
+    reportDraft: handleReportDraft, submitReport: handleSubmitReport, reportPush: handleReportPush, reportPull: handleReportPull,
   }
   var action = request.value.action
   var handler = handlers[action]
@@ -241,6 +241,7 @@ function setup() {
   getSheet(SHEET_MAPPINGS, MAPPING_COLUMNS)
   setupInspectionSheets()
   fillMissingHeaders(getSheet(SHEET_REPORTS, REPORT_COLUMNS), REPORT_COLUMNS)
+  getReportStoreSheet()
   var props = PropertiesService.getScriptProperties()
   if (!props.getProperty('APP_TOKEN')) props.setProperty('APP_TOKEN', Utilities.getUuid().replace(/-/g, ''))
   getDataVersion(props)

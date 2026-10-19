@@ -1,4 +1,5 @@
 import { isValidEvent, isValidRobot, isValidSite } from '../domain/inspection/validation.js'
+import { ABORTED, assertShape, isUnsupported, joinNotices } from './channelUtils.js'
 import { readJson, writeJson } from './kvJson.js'
 import { mergeLatest, unionById } from './merge.js'
 
@@ -16,7 +17,6 @@ const MASTERS = [
   ['robots', 'robotId'],
 ]
 const BATCH_SIZE = 500
-const ABORTED = Object.freeze({ ok: false, code: 'ABORTED' })
 const UNSUPPORTED_NOTICE = '점검 기록은 아직 시트에 올리지 못했습니다. Apps Script를 최신 버전으로 다시 배포하세요.'
 
 const outboxSize = (box) => box.sites.length + box.robots.length + box.events.length
@@ -48,14 +48,6 @@ const ackBatch = (box, sent, handledIds) => {
   return next
 }
 
-// 점검 기능이 없던 예전 Apps Script 배포인지 (그때는 BAD_REQUEST로 답했다)
-const isUnsupported = (result) =>
-  result.code === 'UNKNOWN_ACTION' || (result.code === 'BAD_REQUEST' && /알 수 없는 요청/.test(result.error || ''))
-
-const assertShape = (condition, what) => {
-  if (!condition) throw new Error(`서버 응답 형식이 올바르지 않습니다 (${what}).`)
-}
-
 // 받은 데이터를 이 기기 데이터와 합친다. 점검 데이터는 지우지 않으므로 전체를 다시 받아도 합치기만 하면 된다.
 const mergeInspection = (local, remote) => {
   const sites = mergeLatest(local.sites, remote.sites, 'siteId')
@@ -64,8 +56,6 @@ const mergeInspection = (local, remote) => {
   if (!sites.changed && !robots.changed && !events.changed) return local
   return { sites: sites.items, robots: robots.items, events: events.items }
 }
-
-const joinNotices = (...notices) => notices.filter(Boolean).join(' ')
 
 // isConnected·requestSync: 엔진의 연결 여부와 "곧 동기화" 요청 (엔진이 채널보다 나중에 만들어져서 함수로 받는다)
 export const createInspectionChannel = ({ store, kv, isConnected, requestSync }) => {

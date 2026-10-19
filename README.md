@@ -32,7 +32,7 @@ src/
   ui/       화면: views/(화면별), components/(공용), dom.js(이스케이프 템플릿)
   sync/     구글 시트 동기화(엔진, 보낼 목록, 합치기), Apps Script 요청
   styles/   기본, 컴포넌트, 인쇄(라벨), 서류로 입고(ocr)
-apps-script/ 구글 시트 서버: Code(요청 처리), Logic(순수 규칙), Ocr(Claude API 호출), OcrLogic(OCR 순수 규칙), Inspection·InspectionLogic(현장점검 동기화), Report·ReportLogic·ReportSubmitLogic(AI 보고서 초안·제출)
+apps-script/ 구글 시트 서버: Code(요청 처리), Logic(순수 규칙), Ocr(Claude API 호출), OcrLogic(OCR 순수 규칙), Inspection·InspectionLogic(현장점검 동기화), Report·ReportLogic·ReportSubmitLogic(AI 보고서 초안·제출), ReportSync·ReportSyncLogic(보고서 기기 간 동기화)
 tests/unit/ 단위 테스트 (Vitest). tests/support/: 가짜 Apps Script·Google 서비스
 e2e/        E2E 테스트 (Playwright)
 ```

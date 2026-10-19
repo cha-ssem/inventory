@@ -137,4 +137,36 @@ describe('normalizeReportState', () => {
     expect(normalizeReportState({ reports: [good, { reportId: 'b', status: '?' }, null] })).toEqual({ reports: [good] })
     expect(normalizeReportState({ reports: 'x' })).toEqual({ reports: 'x' })
   })
+
+  it('저장할 때마다 onLocalChange로 알리고, 저장에 실패하면 알리지 않는다', () => {
+    const changes = []
+    const ok = createReportStore({ storage: memoryStorage(), now: () => NOW, makeId: () => 'rp-1', onLocalChange: (r) => changes.push(r.status) })
+    ok.create(input, snapshot)
+    ok.update('rp-1', { summary: '요약' })
+    ok.finalize('rp-1')
+    expect(changes).toEqual(['DRAFT', 'DRAFT', 'FINALIZED'])
+
+    const failed = vi.fn()
+    createReportStore({ storage: memoryStorage({ failSave: true }), now: () => NOW, makeId: () => 'rp-1', onLocalChange: failed }).create(input, snapshot)
+    expect(failed).not.toHaveBeenCalled()
+  })
+
+  it('applyRemote: 받은 보고서를 합쳐 저장하고, 바뀐 것이 없으면 저장하지 않는다', () => {
+    const { store, storage } = makeStore()
+    const listener = vi.fn()
+    store.subscribe(listener)
+    const remote = { ...store.create(input, snapshot).value, reportId: 'other' }
+    listener.mockClear()
+    expect(store.applyRemote((reports) => [...reports, remote])).toEqual({ ok: true, changed: true })
+    expect(storage.peek().reports).toHaveLength(2)
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(store.applyRemote((reports) => reports)).toEqual({ ok: true, changed: false })
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('applyRemote: 저장에 실패하면 실패를 돌려주고 목록을 바꾸지 않는다', () => {
+    const { store } = makeStore({ failSave: true })
+    expect(store.applyRemote(() => [{ reportId: 'x' }]).ok).toBe(false)
+    expect(store.list()).toEqual([])
+  })
 })

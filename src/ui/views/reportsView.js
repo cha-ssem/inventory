@@ -68,7 +68,7 @@ export const renderReports = (container, { reports, inspection, navigate }) => {
         <h1>점검 보고서</h1>
         <div class="actions"><button type="button" class="btn btn-primary" data-action="new">새 보고서</button></div>
       </div>
-      <p class="muted">일간·주간 점검 기록을 모아 보고서를 만들고, 확정한 뒤 PDF로 저장합니다.</p>
+      <p class="muted">일간·주간 점검 기록을 모아 보고서를 만들고, 확정한 뒤 PDF로 저장합니다. 구글 시트에 연결하면 확정·제출한 보고서는 다른 기기에서도 보입니다(초안은 이 기기에만).</p>
       <section class="panel"><div class="table-area"></div></section>`,
   )
   const newButton = qs(container, '[data-action="new"]')

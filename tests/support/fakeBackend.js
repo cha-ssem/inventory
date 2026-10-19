@@ -9,7 +9,7 @@ export const FAKE_TOKEN = 'e2etoken0123456789'
 const loadLogic = () => {
   const here = dirname(fileURLToPath(import.meta.url))
   const gs = vm.createContext({})
-  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs', 'ReportLogic.gs', 'ReportSubmitLogic.gs']) vm.runInContext(readFileSync(resolve(here, '../../apps-script', file), 'utf-8'), gs)
+  for (const file of ['Logic.gs', 'OcrLogic.gs', 'InspectionLogic.gs', 'ReportLogic.gs', 'ReportSubmitLogic.gs', 'ReportSyncLogic.gs']) vm.runInContext(readFileSync(resolve(here, '../../apps-script', file), 'utf-8'), gs)
   return gs
 }
 
@@ -23,8 +23,11 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
     // reportResult: reportDraft 요청에 돌려줄 AI 문단 또는 { ok: false, ... } 오류. reportInputs: 받은 보고서 데이터
     reportResult: null, reportInputs: [],
     // reports: 제출된 보고서 줄 { reportKey, submittedAt, mailStatus }, mails: 보낸 메일, mailFails: 메일 실패 흉내
-    reports: [], mails: [], mailFails: false }
+    reports: [], mails: [], mailFails: false,
+    // reportStore: report_store 탭 줄(시트 행 그대로), reportRev: REPORT_STORE_REV, reportPage: 한 쪽 줄 수(기본 10). reportSyncSupported=false면 예전 배포처럼 응답
+    reportStore: [], reportRev: 0, reportPage: undefined, reportSyncSupported: true }
   const lastRowId = () => db.transactions.at(-1)?.id ?? null
+  const reportIndex = () => db.reportStore.map((row) => ({ reportId: row[0], status: row[2], mailStatus: row[3], updatedAt: row[4], rev: row[5] }))
 
   const handlers = {
     ping: () => ({ ok: true, dataVersion: db.version, revision: db.revision, parts: db.parts.length, transactions: db.transactions.length, sheet: '입출고 시험 시트' }),
@@ -110,6 +113,23 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
         ...(mailStatus === 'FAILED' ? { warning: '시트에는 기록했지만 메일을 보내지 못했습니다. 잠시 후 [메일 다시 보내기]를 누르세요.' } : {}),
       }
     },
+    reportPush: (req) => {
+      const plan = gs.planReportPush(reportIndex(), req.reports)
+      let rev = gs.nextReportRevBase(reportIndex(), db.reportRev)
+      plan.writes.forEach((w) => {
+        rev += 1
+        const row = gs.storedReportToRow(w.value, rev)
+        db.reportStore = w.rowIndex === null ? [...db.reportStore, row] : db.reportStore.map((r, i) => (i === w.rowIndex ? row : r))
+      })
+      if (plan.writes.length > 0) db.reportRev = rev
+      return { ok: true, acceptedIds: plan.acceptedIds, duplicateIds: plan.duplicateIds, rejected: plan.rejected, rev }
+    },
+    reportPull: (req) => {
+      const since = gs.reportPullStart(req.sinceRev, db.reportRev)
+      const picked = gs.selectReportPullRows(reportIndex(), since, db.reportRev, db.reportPage)
+      const reports = picked.rowIndexes.map((i) => gs.rowToStoredReport(db.reportStore[i])).filter(Boolean)
+      return { ok: true, full: since === 0, more: picked.more, reports, invalidCount: picked.rowIndexes.length - reports.length, rev: picked.rev }
+    },
     replaceAll: (req) => {
       const allowed = gs.checkReplaceAllowed(req, db.revision)
       if (!allowed.ok) return allowed
@@ -127,6 +147,8 @@ export const createFakeBackend = ({ token = FAKE_TOKEN } = {}) => {
     if (!gs.checkToken(req.token, token)) return { ok: false, code: 'UNAUTHORIZED', error: '연결 토큰이 맞지 않습니다.' }
     const isInspection = req.action === 'inspPush' || req.action === 'inspPull'
     if (isInspection && !db.inspectionSupported) return { ok: false, code: 'BAD_REQUEST', error: '알 수 없는 요청입니다.' }
+    const isReportSync = req.action === 'reportPush' || req.action === 'reportPull'
+    if (isReportSync && !db.reportSyncSupported) return { ok: false, code: 'UNKNOWN_ACTION', error: '알 수 없는 요청입니다. Apps Script를 최신 버전으로 다시 배포하세요.' }
     const handler = handlers[req.action]
     if (!handler) return { ok: false, code: 'UNKNOWN_ACTION', error: '알 수 없는 요청입니다.' }
     return handler(req)
