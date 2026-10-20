@@ -13,6 +13,12 @@ export const mergeLatest = (base, incoming, key) => {
   return { items: changed ? [...byKey.values()] : base, changed }
 }
 
+// 합친 뒤 새로 생기거나 바뀐 항목 수 (합치기는 그대로인 항목을 같은 객체로 남기므로 객체가 달라진 것만 센다)
+export const countChanged = (before, after, key) => {
+  const byKey = new Map(before.map((item) => [item[key], item]))
+  return after.filter((item) => byKey.get(item[key]) !== item).length
+}
+
 // 지우지 않고 추가만 하는 기록은 ID 기준 합집합이면 충돌이 없다 (입출고 기록·점검 이벤트).
 // 시트에서 행을 복사해 같은 ID가 두 번 와도 한 번만 남긴다 (중복이 저장되면 다음에 불러올 때 검증에 걸려 데이터가 사라짐).
 export const unionById = (base, incoming, key = 'id') => {

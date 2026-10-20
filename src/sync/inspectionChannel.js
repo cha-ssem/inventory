@@ -1,7 +1,7 @@
 import { isValidEvent, isValidRobot, isValidSite } from '../domain/inspection/validation.js'
 import { ABORTED, assertShape, isUnsupported, joinNotices } from './channelUtils.js'
 import { readJson, writeJson } from './kvJson.js'
-import { mergeLatest, unionById } from './merge.js'
+import { countChanged, mergeLatest, unionById } from './merge.js'
 
 // 현장점검 데이터를 입출고와 같은 구글 시트 연결로 주고받는 동기화 채널 (engine.js의 channels에 붙인다).
 // 현장·로봇은 수정일시가 최신인 쪽, 점검 이벤트는 지우지 않고 추가만 하므로 ID 합집합으로 합친다.
@@ -109,11 +109,17 @@ export const createInspectionChannel = ({ store, kv, isConnected, requestSync })
 
     const remote = { sites: result.sites.filter(isValidSite), robots: result.robots.filter(isValidRobot), events: result.events.filter(isValidEvent) }
     const dropped = (result.invalidCount || 0) + result.events.length - remote.events.length
-    const applied = store.applyRemote((current) => mergeInspection(current, remote))
+    let received = 0
+    const applied = store.applyRemote((current) => {
+      const next = mergeInspection(current, remote)
+      received =
+        countChanged(current.sites, next.sites, 'siteId') + countChanged(current.robots, next.robots, 'robotId') + countChanged(current.events, next.events, 'id')
+      return next
+    })
     // 브라우저에 저장하지 못했으면 받은 위치를 옮기지 않는다 (다음에 다시 받음)
     if (applied.warning) return { ok: false, code: 'SAVE_FAILED', error: '받은 점검 데이터를 브라우저에 저장하지 못했습니다. 저장 공간을 확인하세요.' }
     saveMeta({ offset: result.total, lastRowId: result.lastRowId ?? null })
-    return { ok: true, notice: dropped > 0 ? `시트에 형식이 잘못된 점검 행 ${dropped}개는 받지 않았습니다.` : '' }
+    return { ok: true, received, notice: dropped > 0 ? `시트에 형식이 잘못된 점검 행 ${dropped}개는 받지 않았습니다.` : '' }
   }
 
   const sync = async (client, isCurrent) => {
@@ -129,7 +135,7 @@ export const createInspectionChannel = ({ store, kv, isConnected, requestSync })
     const pulled = await pull(client, isCurrent)
     if (!pulled.ok) return pulled
     if (pulled.unsupported) return { ok: true, notice: UNSUPPORTED_NOTICE }
-    return { ok: true, notice: joinNotices(pushed.notice, pulled.notice) }
+    return { ok: true, received: pulled.received, notice: joinNotices(pushed.notice, pulled.notice) }
   }
 
   // 연결 방식(입출고 기준: 올리기·받기·합치기)과 상관없이 점검 데이터는 늘 양쪽을 합친다.

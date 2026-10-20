@@ -1,4 +1,4 @@
-import { formatDateTime } from '../../domain/dates.js'
+import { formatDateTime, isSameLocalDay } from '../../domain/dates.js'
 import { formValues, formatNumber, html, qs, setHtml, showFieldErrors } from '../dom.js'
 import { confirmDialog, notifyResult, openModal, toast } from '../feedback.js'
 
@@ -8,6 +8,17 @@ const STATE_LABELS = {
   ok: '정상',
   offline: '오프라인 (연결되면 자동 전송)',
   error: '오류',
+}
+
+// 마지막으로 받은 건수와 시각, 아래 줄에 묶음별 내역. 예: 5건 · 10:31 / 입출고 3 · 보고서 2
+// 오늘 받은 것이면 시각만, 아니면 날짜까지 보인다
+const receivedText = (received) => {
+  if (!received) return '-'
+  const total = received.items.reduce((sum, item) => sum + item.count, 0)
+  const at = formatDateTime(received.at)
+  const when = isSameLocalDay(received.at, new Date().toISOString()) ? at.slice(-5) : at
+  const detail = received.items.map((item) => `${item.label} ${formatNumber(item.count)}`).join(' · ')
+  return html`${formatNumber(total)}건 · ${when}<br /><small class="muted">${detail}</small>`
 }
 
 const maskUrl = (url) => url.replace(/(\/s\/.{6}).+(.{4}\/exec)$/, '$1…$2')
@@ -39,6 +50,7 @@ const connectedView = (status, config) => html`
   <dl class="sync-info" data-testid="sync-info">
     <div><dt>상태</dt><dd class="sync-state-${status.state}">${STATE_LABELS[status.state] || status.state}${status.message ? ` · ${status.message}` : ''}</dd></div>
     <div><dt>보낼 목록</dt><dd data-testid="sync-pending">${formatNumber(status.pending)}건</dd></div>
+    <div><dt>받은 목록</dt><dd data-testid="sync-received">${receivedText(status.lastReceived)}</dd></div>
     <div><dt>마지막 동기화</dt><dd>${status.lastSyncAt ? formatDateTime(status.lastSyncAt) : '-'}</dd></div>
     <div><dt>연결 주소</dt><dd class="mono">${maskUrl(config?.url || '')}</dd></div>
   </dl>

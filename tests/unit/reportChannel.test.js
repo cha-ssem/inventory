@@ -331,5 +331,22 @@ describe('보고서 동기화 채널', () => {
     expect(server.db.reportStore.map((row) => row[0])).toEqual([old.reportId])
     expect(JSON.parse(a.kv.getItem(REPORT_SYNC_KEYS.meta)).seeded).toBe(true)
   })
+
+  it('받은 목록: 마지막으로 받은 건수를 묶음별로 남기고, 아무것도 안 받은 동기화는 그대로 둔다', async () => {
+    const server = fakeServer()
+    const a = makeDevice(server)
+    const b = makeDevice(server, { name: 'B' })
+    await a.engine.connect(CONFIG, 'merge')
+    a.finalized()
+    a.finalized()
+    await a.engine.syncNow()
+    expect(a.engine.getStatus().lastReceived).toBeNull() // 자기가 올린 것은 받은 것으로 세지 않는다
+
+    await b.engine.connect(CONFIG, 'merge')
+    expect(b.engine.getStatus().lastReceived).toMatchObject({ items: [{ label: '보고서', count: 2 }] })
+    const first = b.engine.getStatus().lastReceived
+    await b.engine.syncNow()
+    expect(b.engine.getStatus().lastReceived).toBe(first)
+  })
 })
 

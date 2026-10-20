@@ -1,7 +1,7 @@
 import { isValidPart, isValidTransaction } from '../domain/backup.js'
 import { validateSyncConfig } from './config.js'
 import { withSyncLeader } from './leader.js'
-import { mergeRemote } from './merge.js'
+import { countChanged, mergeRemote } from './merge.js'
 import { readJson, writeJson } from './kvJson.js'
 import { EMPTY_OUTBOX, ackBatch, enqueueChange, outboxSize, takeBatch } from './outbox.js'
 
@@ -35,7 +35,8 @@ const assertShape = (condition, what) => {
 //   { name, label, keys, sync(client, isCurrent), pending(), onConnect(mode), reset() }
 //   채널이 실패해도 입출고 동기화 결과는 그대로 두고, 상태에 channelFailed와 채널 이름을 붙여 알린다.
 export const createSyncEngine = ({ store, kv, createClient, now = () => new Date().toISOString(), channels = [] }) => {
-  let status = { state: 'idle', message: '', lastSyncAt: null, rejected: [], conflict: false, channelFailed: false }
+  // lastReceived: 마지막으로 무엇이든 받았을 때의 건수 { at, items: [{ label, count }] } (설정 화면의 "받은 목록")
+  let status = { state: 'idle', message: '', lastSyncAt: null, lastReceived: null, rejected: [], conflict: false, channelFailed: false }
   let running = null
   let rerun = false
   let timers = null
@@ -103,7 +104,19 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
   }
 
   // 채널을 차례로 동기화한다. 첫 실패를 "채널 이름 동기화: 이유"로 돌려준다 (예외도 실패로 바꿈).
-  const runChannels = async (client, isCurrent, notices) => {
+  // 이번 동기화에서 받은 건수를 묶음별로 더한다. 하나라도 받았으면 "받은 목록"을 이번 것으로 바꾼다.
+  const createReceivedLog = () => {
+    const items = []
+    return (label, count) => {
+      if (!(count > 0)) return
+      const found = items.find((item) => item.label === label)
+      if (found) found.count += count
+      else items.push({ label, count })
+      status = { ...status, lastReceived: { at: now(), items: items.map((item) => ({ ...item })) } }
+    }
+  }
+
+  const runChannels = async (client, isCurrent, notices, noteReceived) => {
     for (const channel of channels) {
       let result
       try {
@@ -114,6 +127,7 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
       }
       if (result?.code === ABORTED.code || !isCurrent()) return ABORTED
       if (!result.ok) return { ...result, error: `${channel.label ?? channel.name} 동기화: ${result.error}` }
+      noteReceived(channel.label ?? channel.name, result.received)
       if (result.notice) notices.push(result.notice)
     }
     return null
@@ -180,11 +194,16 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     const invalid = (result.invalidCount || 0) + (result.transactions.length - transactions.length) + (result.parts.length - parts.length)
     const remote = { ...result, transactions, parts }
 
-    const applied = store.applyRemote((current) => mergeRemote(current, remote, outbox()).state)
+    let received = 0
+    const applied = store.applyRemote((current) => {
+      const next = mergeRemote(current, remote, outbox()).state
+      received = countChanged(current.parts, next.parts, 'partNo') + countChanged(current.transactions, next.transactions, 'id')
+      return next
+    })
     // 브라우저에 저장하지 못했으면 받은 위치를 옮기지 않는다 (다음에 다시 받음)
     if (applied.warning) return { ok: false, code: 'SAVE_FAILED', error: '받은 데이터를 브라우저에 저장하지 못했습니다. 저장 공간을 확인하세요.' }
     saveMeta({ dataVersion: result.dataVersion, revision: result.revision ?? null, txOffset: result.txTotal, lastRowId: result.lastRowId ?? null })
-    return { ok: true, notice: invalid > 0 ? `시트에 형식이 잘못된 행 ${invalid}개는 받지 않았습니다. 시트를 직접 고치지 마세요.` : '' }
+    return { ok: true, received, notice: invalid > 0 ? `시트에 형식이 잘못된 행 ${invalid}개는 받지 않았습니다. 시트를 직접 고치지 마세요.` : '' }
   }
 
   const runSync = async () => {
@@ -197,6 +216,7 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
     try {
       const steps = [meta().pendingReplace ? replaceRemote : null, pushOutbox, pullRemote].filter(Boolean)
       const notices = []
+      const noteReceived = createReceivedLog()
       for (const step of steps) {
         const result = await step(client, isCurrent)
         if (result?.code === ABORTED.code || !isCurrent()) return getStatus()
@@ -204,9 +224,10 @@ export const createSyncEngine = ({ store, kv, createClient, now = () => new Date
           failWith(result)
           return getStatus()
         }
+        noteReceived('입출고', result.received)
         if (result.notice) notices.push(result.notice)
       }
-      const channelError = await runChannels(client, isCurrent, notices)
+      const channelError = await runChannels(client, isCurrent, notices, noteReceived)
       if (channelError === ABORTED) return getStatus()
       if (channelError) {
         failWith(channelError, { channelFailed: true })

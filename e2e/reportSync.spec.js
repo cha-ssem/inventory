@@ -48,6 +48,8 @@ test('한 기기에서 확정·제출한 보고서가 다른 기기의 보고서
   await syncNow(pc)
 
   await syncNow(phone)
+  // 설정의 "받은 목록"에 받은 보고서 건수가 보인다
+  await expect(phone.getByTestId('sync-received')).toContainText('보고서 1')
   await phone.goto('/#/reports')
   const rows = phone.locator('tr[data-report-id]')
   await expect(rows).toHaveCount(1)

@@ -1,6 +1,7 @@
 import { isSharedReport, isValidRemoteReport, mergeReports } from '../domain/report/sync.js'
 import { ABORTED, assertShape, isUnsupported, joinNotices } from './channelUtils.js'
 import { readJson, writeJson } from './kvJson.js'
+import { countChanged } from './merge.js'
 
 // 확정·제출한 점검 보고서를 입출고와 같은 구글 시트 연결로 주고받는 동기화 채널 (engine.js의 channels에 붙인다).
 // 초안은 쓰던 기기에만 둔다. 보낼 목록에는 보고서 ID만 두고, 보낼 때 저장소의 최신 내용을 읽는다.
@@ -101,7 +102,12 @@ export const createReportChannel = ({ store, kv, isConnected, requestSync, clock
 
     const remote = result.reports.filter(isValidRemoteReport)
     const dropped = (result.invalidCount || 0) + result.reports.length - remote.length
-    const applied = store.applyRemote((current) => mergeReports(current, remote))
+    let received = 0
+    const applied = store.applyRemote((current) => {
+      const next = mergeReports(current, remote)
+      received = countChanged(current, next, 'reportId')
+      return next
+    })
     // 브라우저에 저장하지 못했으면 받은 위치를 옮기지 않고, 다음에 받을 때까지 간격을 늘린다
     if (!applied.ok) {
       const failures = backoff.failures + 1
@@ -110,20 +116,22 @@ export const createReportChannel = ({ store, kv, isConnected, requestSync, clock
     }
     backoff = { failures: 0, until: 0 }
     writeJson(kv, REPORT_SYNC_KEYS.meta, { ...meta(), rev: result.rev })
-    return { ok: true, more: result.more === true, dropped }
+    return { ok: true, more: result.more === true, dropped, received }
   }
 
   // 시트가 한 쪽씩 주므로 남았다고(more) 하면 이어 받는다
   const pull = async (client, isCurrent) => {
     if (clock() < backoff.until) return PULL_SAVE_FAILED
     let dropped = 0
+    let received = 0
     for (let round = 0; round < MAX_ROUNDS; round += 1) {
       const page = await pullPage(client, isCurrent)
       if (!page.ok || page.unsupported) return page
       dropped += page.dropped
+      received += page.received
       if (!page.more) break
     }
-    return { ok: true, notice: dropped > 0 ? `시트에 형식이 잘못된 보고서 ${dropped}건은 받지 않았습니다.` : '' }
+    return { ok: true, received, notice: dropped > 0 ? `시트에 형식이 잘못된 보고서 ${dropped}건은 받지 않았습니다.` : '' }
   }
 
   const sync = async (client, isCurrent) => {
@@ -146,7 +154,7 @@ export const createReportChannel = ({ store, kv, isConnected, requestSync, clock
     const pulled = await pull(client, isCurrent)
     if (!pulled.ok) return pulled
     if (pulled.unsupported) return { ok: true, notice: UNSUPPORTED_NOTICE }
-    return { ok: true, notice: joinNotices(pushed.notice, pulled.notice) }
+    return { ok: true, received: pulled.received, notice: joinNotices(pushed.notice, pulled.notice) }
   }
 
   // 연결 방식과 상관없이 이 기기의 확정·제출본을 모두 보내고, 시트의 보고서를 처음부터 받는다
