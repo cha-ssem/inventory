@@ -4,38 +4,6 @@
 부품 입출고(재고)에 더해, 확장 기능으로 수중 점검 로봇의 현장점검·센서 모니터링·점검 보고서를 다룹니다.
 요구사항은 [../inventory-prd.md](../inventory-prd.md)를 따릅니다.
 
-## 바로 쓰기
-
-`dist/index.html`을 더블클릭해서 크롬이나 엣지로 엽니다. 설치, 서버, 인터넷이 필요 없습니다.
-처음이면 **설정 → 샘플 데이터 불러오기**로 시연용 데이터를 넣으세요.
-
-> 카메라 스캔은 브라우저에 따라 `file://`에서 막힐 수 있습니다. 그럴 때는 아래 `npm run preview`로 실행하세요.
-
-## 개발
-
-```bash
-npm install
-npm run dev            # 개발 서버 (http://localhost:5173)
-npm run build          # dist/index.html 한 파일로 빌드
-npm run preview        # 빌드 결과 실행 (http://localhost:4173, 카메라 사용 가능)
-npm test               # 단위 테스트
-npm run test:coverage  # 커버리지 (기준 80%)
-npm run test:e2e       # E2E 테스트 (처음 한 번: npx playwright install chromium)
-```
-
-## 구조
-
-```
-src/
-  domain/   순수 로직: 검증, 재고 계산, 입출고·취소 규칙, CSV, 백업, 날짜
-  data/     브라우저 저장소, 상태 관리(store), 샘플 데이터
-  ui/       화면: views/(화면별), components/(공용), dom.js(이스케이프 템플릿)
-  sync/     구글 시트 동기화(엔진, 보낼 목록, 합치기), Apps Script 요청
-  styles/   기본, 컴포넌트, 인쇄(라벨), 서류로 입고(ocr)
-apps-script/ 구글 시트 서버: Code(요청 처리), Logic(순수 규칙), Ocr(Claude API 호출), OcrLogic(OCR 순수 규칙), Inspection·InspectionLogic(현장점검 동기화), Report·ReportLogic·ReportSubmitLogic(AI 보고서 초안·제출), ReportSync·ReportSyncLogic(보고서 기기 간 동기화)
-tests/unit/ 단위 테스트 (Vitest). tests/support/: 가짜 Apps Script·Google 서비스
-e2e/        E2E 테스트 (Playwright)
-```
 
 ## 설계 원칙
 
