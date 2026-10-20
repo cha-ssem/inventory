@@ -218,7 +218,12 @@ ul.plain {
   }
 
   .app-nav a.nav-group-start {
-    margin-left: 0.25rem;
+    margin-left: 0;
+  }
+
+  /* 품번 옆 "로봇" 표시가 휴대폰에서 너무 작지 않게 */
+  .section-tag-sm {
+    font-size: 0.78rem;
   }
 }
 

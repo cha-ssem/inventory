@@ -16,7 +16,7 @@ const stockTable = (rows) =>
   rows.length === 0
     ? html`<div class="empty">조건에 맞는 품목이 없습니다.</div>`
     : html`<div class="table-wrap">
-        <table data-testid="stock-table">
+        <table class="table-cards" data-testid="stock-table">
           <thead>
             <tr>
               <th>품번</th><th>품명</th><th>규격</th><th>보관 위치</th>
@@ -26,14 +26,14 @@ const stockTable = (rows) =>
           <tbody>
             ${rows.map(
               (r) => html`<tr class="${rowClass(r)}" data-part-no="${r.partNo}">
-                <td class="mono">${partNoLabel(r.partNo)}</td>
-                <td>${r.name}</td>
-                <td>${r.spec}</td>
-                <td>${r.location}</td>
-                <td class="num stock">${formatNumber(r.stock)}</td>
-                <td class="num">${formatNumber(r.safetyStock)}</td>
-                <td>${r.unit}</td>
-                <td>${statusBadge(r)}</td>
+                <td class="mono" data-label="품번">${partNoLabel(r.partNo)}</td>
+                <td class="card-title" data-label="품명">${r.name}</td>
+                <td data-label="규격">${r.spec}</td>
+                <td data-label="보관 위치">${r.location}</td>
+                <td class="num stock" data-label="현재고">${formatNumber(r.stock)}</td>
+                <td class="num" data-label="안전재고">${formatNumber(r.safetyStock)}</td>
+                <td data-label="단위">${r.unit}</td>
+                <td data-label="상태">${statusBadge(r)}</td>
               </tr>`,
             )}
           </tbody>

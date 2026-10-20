@@ -26,21 +26,21 @@ const nameOf = (list, key, id) => list.find((item) => item[key] === id)?.name ??
 const requestTable = (requests, { sites, robots }) => {
   if (requests.length === 0) return html`<div class="empty">조건에 맞는 점검 요청이 없습니다.</div>`
   return html`<div class="table-wrap">
-    <table class="inspection-table">
+    <table class="inspection-table table-cards">
       <thead>
         <tr><th>우선</th><th>점검 제목</th><th>현장</th><th>로봇</th><th>상태</th><th>담당</th><th>요청 일시</th><th>출처</th></tr>
       </thead>
       <tbody>
         ${requests.map(
           (r) => html`<tr data-request-id="${r.requestId}" class="clickable">
-            <td>${priorityBadge(r.priority)}</td>
-            <td><a href="#/inspection?id=${encodeURIComponent(r.requestId)}">${r.title}</a>${r.recurCount > 0 ? html` <span class="muted">(재발생 ${r.recurCount}회)</span>` : ''}</td>
-            <td>${nameOf(sites, 'siteId', r.siteId)}</td>
-            <td>${nameOf(robots, 'robotId', r.robotId)}</td>
-            <td>${statusBadge(r.status)}</td>
-            <td>${r.assignee || '-'}</td>
-            <td class="nowrap">${formatDateTime(r.requestedAt)}</td>
-            <td>${sourceLabel(r.source)}</td>
+            <td data-label="우선">${priorityBadge(r.priority)}</td>
+            <td class="card-title" data-label="점검 제목"><a href="#/inspection?id=${encodeURIComponent(r.requestId)}">${r.title}</a>${r.recurCount > 0 ? html` <span class="muted">(재발생 ${r.recurCount}회)</span>` : ''}</td>
+            <td data-label="현장">${nameOf(sites, 'siteId', r.siteId)}</td>
+            <td data-label="로봇">${nameOf(robots, 'robotId', r.robotId)}</td>
+            <td data-label="상태">${statusBadge(r.status)}</td>
+            <td data-label="담당">${r.assignee || '-'}</td>
+            <td class="nowrap" data-label="요청 일시">${formatDateTime(r.requestedAt)}</td>
+            <td data-label="출처">${sourceLabel(r.source)}</td>
           </tr>`,
         )}
       </tbody>

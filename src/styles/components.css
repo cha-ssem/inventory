@@ -298,6 +298,81 @@ tr.is-cancelled td.qty {
   text-decoration: line-through;
 }
 
+/* 휴대폰에서 표를 카드로: <table class="table-cards">, 칸마다 data-label, 제목 칸은 card-title */
+@media (max-width: 720px) {
+  .table-wrap:has(> .table-cards) {
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .table-cards thead {
+    display: none;
+  }
+
+  .table-cards,
+  .table-cards tbody {
+    display: block;
+  }
+
+  .table-cards tr {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .table-cards td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.2rem 0;
+    border: 0;
+    white-space: normal;
+    text-align: right;
+  }
+
+  .table-cards td::before {
+    content: attr(data-label);
+    flex: none;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .table-cards td.card-title {
+    order: -1;
+    display: block;
+    margin-bottom: 0.2rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .table-cards td.card-title::before {
+    content: none;
+  }
+
+  .table-cards tr.is-low {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+  }
+
+  .table-cards tr.is-low td {
+    background: transparent;
+  }
+
+  /* 표 안 체크박스는 손가락으로 누르기 쉽게 */
+  td input[type='checkbox'],
+  th input[type='checkbox'] {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
 .empty {
   padding: 2rem 1rem;
   text-align: center;

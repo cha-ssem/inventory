@@ -114,6 +114,11 @@ textarea {
   border-bottom: 3px solid transparent;
 }
 
+/* 휴대폰에서만 메뉴를 두 줄로 나누는 자리 (입출고 / 확장 메뉴·설정) */
+.nav-break {
+  display: none;
+}
+
 .app-nav a:hover {
   color: #fff;
 }
@@ -173,8 +178,23 @@ main {
     padding: 0.6rem 1rem 0;
   }
 
+  /* 옆으로 밀지 않아도 모든 메뉴가 보이게 두 줄로 */
+  .app-nav {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 0;
+    padding: 0 0.35rem;
+  }
+
   .app-nav a {
-    padding: 0.7rem 0.75rem;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .nav-break {
+    display: block;
+    flex-basis: 100%;
+    height: 0;
   }
 
   main {
