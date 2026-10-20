@@ -13,6 +13,7 @@
     "statements": "node scripts/statements/generate.mjs",
     "prompt-sheet": "node scripts/prompt-sheet/generate.mjs",
     "app-prompt-sheet": "node scripts/app-prompt-sheet/generate.mjs",
+    "expansion-prompt-sheet": "node scripts/expansion-prompt-sheet/generate.mjs",
     "instructor-guide": "node scripts/instructor-guide/generate.mjs",
     "handout": "node scripts/handout/generate.mjs",
     "infographic": "node scripts/infographic/generate.mjs"
