@@ -289,4 +289,31 @@ describe('보고서 동기화 채널', () => {
     expect(a.channel.pending()).toBe(0)
     expect(a.engine.getStatus().message).toMatch(/주고받지 못한 보고서 1건/)
   })
+
+  it('보고서 동기화가 생기기 전부터 연결돼 있던 기기도 예전 확정·제출본을 올린다', async () => {
+    const server = fakeServer()
+    const a = makeDevice(server)
+    await a.engine.connect(CONFIG, 'merge')
+    const old = a.finalized()
+    a.reports.create(input, snapshot) // 초안은 올리지 않음
+    // 업데이트 전 앱처럼 보고서 동기화 정보가 하나도 없는 상태
+    a.kv.removeItem(REPORT_SYNC_KEYS.outbox)
+    a.kv.removeItem(REPORT_SYNC_KEYS.meta)
+    server.db.reportStore = []
+    server.db.reportRev = 0
+
+    await a.engine.syncNow()
+    expect(server.db.reportStore.map((row) => row[0])).toEqual([old.reportId])
+
+    const b = makeDevice(server, { name: 'B' })
+    await b.engine.connect(CONFIG, 'merge')
+    expect(b.reports.list().map((r) => r.reportId)).toEqual([old.reportId])
+
+    // 두 번째 동기화부터는 다시 넣지 않는다
+    const pushes = () => server.db.requests.filter((x) => x === 'reportPush').length
+    const before = pushes()
+    await a.engine.syncNow()
+    expect(pushes()).toBe(before)
+  })
 })
+
