@@ -15,10 +15,9 @@ body[data-section='youngpoong'] {
   --primary-soft: var(--yp-soft);
 }
 
-/* 주 메뉴: 구분선 뒤 청록색 탭 묶음 */
+/* 주 메뉴: 조금 띄운 뒤 청록색 탭 묶음 */
 .app-nav a.nav-group-start {
   margin-left: 0.75rem;
-  border-left: 1px solid rgb(255 255 255 / 25%);
 }
 
 .app-nav a.nav-yp {

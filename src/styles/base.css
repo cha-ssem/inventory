@@ -123,11 +123,6 @@ textarea {
   border-bottom-color: #6fa8ff;
 }
 
-/* 설정은 메뉴 오른쪽 끝, 시트 연결(동기화) 배지 바로 왼쪽에 둔다 */
-.app-nav a.nav-settings {
-  margin-left: auto;
-}
-
 main {
   max-width: 1200px;
   margin: 0 auto;
