@@ -128,10 +128,11 @@ export const createReportChannel = ({ store, kv, isConnected, requestSync, clock
 
   const sync = async (client, isCurrent) => {
     // 보고서 동기화가 생기기 전부터 연결돼 있던 기기는 [연결]을 다시 누르지 않으므로(onConnect가 불리지 않음),
-    // 받은 위치가 아직 없으면 처음 한 번 이 기기의 확정·제출본을 모두 보낼 목록에 넣는다
-    if (readJson(kv, REPORT_SYNC_KEYS.meta, null) === null) {
+    // 이 기기의 확정·제출본을 아직 한 번도 넣지 않았으면(seeded 없음) 모두 보낼 목록에 넣는다.
+    // 받은 위치(rev)만 보고 판단하면, 이 처리가 없던 버전에서 한 번 받아 둔 기기가 빠진다.
+    if (!meta().seeded) {
       resendAll = true
-      writeJson(kv, REPORT_SYNC_KEYS.meta, EMPTY_META)
+      writeJson(kv, REPORT_SYNC_KEYS.meta, { ...meta(), seeded: true })
     }
     if (resendAll) {
       resendAll = false
@@ -151,7 +152,7 @@ export const createReportChannel = ({ store, kv, isConnected, requestSync, clock
   // 연결 방식과 상관없이 이 기기의 확정·제출본을 모두 보내고, 시트의 보고서를 처음부터 받는다
   const onConnect = () => {
     saveOutbox(sharedIds())
-    writeJson(kv, REPORT_SYNC_KEYS.meta, EMPTY_META)
+    writeJson(kv, REPORT_SYNC_KEYS.meta, { ...EMPTY_META, seeded: true })
     backoff = { failures: 0, until: 0 }
   }
 

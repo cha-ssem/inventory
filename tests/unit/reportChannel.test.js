@@ -315,5 +315,21 @@ describe('보고서 동기화 채널', () => {
     await a.engine.syncNow()
     expect(pushes()).toBe(before)
   })
+
+  it('예전 버전에서 받은 위치만 남아 있는 기기도 예전 확정·제출본을 한 번 올린다', async () => {
+    const server = fakeServer()
+    const a = makeDevice(server)
+    await a.engine.connect(CONFIG, 'merge')
+    const old = a.finalized()
+    // 처음 넣기 표시(seeded)가 없던 버전이 받은 위치만 저장해 둔 상태
+    a.kv.removeItem(REPORT_SYNC_KEYS.outbox)
+    a.kv.setItem(REPORT_SYNC_KEYS.meta, JSON.stringify({ rev: 0 }))
+    server.db.reportStore = []
+    server.db.reportRev = 0
+
+    await a.engine.syncNow()
+    expect(server.db.reportStore.map((row) => row[0])).toEqual([old.reportId])
+    expect(JSON.parse(a.kv.getItem(REPORT_SYNC_KEYS.meta)).seeded).toBe(true)
+  })
 })
 
