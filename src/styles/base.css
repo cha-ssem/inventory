@@ -98,6 +98,8 @@ textarea {
 
 .app-nav {
   display: flex;
+  flex: 1;
+  min-width: 0;
   gap: 0.25rem;
   overflow-x: auto;
   scrollbar-width: none;
@@ -119,6 +121,11 @@ textarea {
 .app-nav a.active {
   color: #fff;
   border-bottom-color: #6fa8ff;
+}
+
+/* 설정은 메뉴 오른쪽 끝, 시트 연결(동기화) 배지 바로 왼쪽에 둔다 */
+.app-nav a.nav-settings {
+  margin-left: auto;
 }
 
 main {
